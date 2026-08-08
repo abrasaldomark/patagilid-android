@@ -24,6 +24,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import com.devmarkabrasaldo.PataGilid.R
 import com.devmarkabrasaldo.PataGilid.data.repository.MountainRepository
 import com.devmarkabrasaldo.PataGilid.domain.models.HikeLog
@@ -64,6 +70,7 @@ fun ClimbsListScreen(
     var selectedRegion by remember { mutableStateOf<String?>(null) }
     var selectedIsland by remember { mutableStateOf<IslandGroup?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
         isLoading = true
@@ -113,14 +120,19 @@ fun ClimbsListScreen(
     }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus()
+                })
+            },
         containerColor = Color(0xFFF5F6F8),
         topBar = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White)
-                    .statusBarsPadding()
             ) {
                 // Upper right floating search & filter buttons in white capsule
                 Row(
@@ -370,6 +382,8 @@ fun ClimbsListScreen(
                             focusedContainerColor = Color(0xFFF8F9FA),
                             unfocusedContainerColor = Color(0xFFF8F9FA)
                         ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                         singleLine = true
                     )
                 }
@@ -718,10 +732,12 @@ fun HikeLogCard(log: HikeLog, mountain: Mountain?, onClick: () -> Unit) {
 
                 // Trail / Route Badge
                 if (!log.trailName.isNullOrBlank()) {
-                    val trailText = if (log.isTraverse == true && !log.exitTrailName.isNullOrBlank()) {
+                    val trailText = if (log.routeType == "Traverse" && log.exitTrailName.isNotBlank()) {
                         "${log.trailName} ➔ ${log.exitTrailName} (Traverse)"
-                    } else if (log.isTraverse == true) {
+                    } else if (log.routeType == "Traverse") {
                         "${log.trailName} (Traverse)"
+                    } else if (log.routeType == "Circuit") {
+                        "${log.trailName} (Circuit)"
                     } else {
                         "${log.trailName} (Back Trail)"
                     }

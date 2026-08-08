@@ -15,11 +15,12 @@ data class HikeLog(
     var dateTimeEnd: Long = 0L,
     var didSummit: Boolean = true,
     var photoUrls: List<String> = emptyList(),
-    var trailName: String? = null,
-    var isTraverse: Boolean? = null,
-    var exitTrailName: String? = null,
-    var trailDifficulty: String? = null,
-    var trailClass: String? = null
+    var trailName: String = "",
+    var routeType: String = "",
+    var exitTrailName: String = "",
+    var trailDifficulty: String = "",
+    var trailClass: String = "",
+    var waypoints: List<String> = emptyList()
 ) : Serializable {
 
     @get:Exclude

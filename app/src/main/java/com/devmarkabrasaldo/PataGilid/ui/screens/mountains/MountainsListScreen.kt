@@ -1,7 +1,9 @@
 package com.devmarkabrasaldo.PataGilid.ui.screens.mountains
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,6 +48,7 @@ fun MountainsListScreen(
     val selectedSort by vm.sortType.collectAsState()
     val availableRegions by vm.availableRegions.collectAsState()
     val isSyncing by vm.isSyncing.collectAsState()
+    val syncProgress by vm.syncProgress.collectAsState()
 
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var isSearchVisible by remember { mutableStateOf(false) }
@@ -60,7 +63,6 @@ fun MountainsListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White)
-                    .statusBarsPadding()
                     .padding(top = 8.dp)
             ) {
                 // Top Action Toolbar
@@ -345,7 +347,16 @@ fun MountainsListScreen(
                 )
 
                 // Subtle Sync Progress Indicator
-                if (isSyncing) {
+                if (syncProgress != null) {
+                    LinearProgressIndicator(
+                        progress = syncProgress!!,
+                        color = Color(0xFF1A73E8),
+                        trackColor = Color(0xFFE8F0FE),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                    )
+                } else if (isSyncing) {
                     LinearProgressIndicator(
                         color = Color(0xFF1A73E8),
                         trackColor = Color(0xFFE8F0FE),
@@ -360,7 +371,13 @@ fun MountainsListScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize().background(Color.White)) {
-            if (mountains.isEmpty() && !isSyncing) {
+            if (mountains.isEmpty() && isSyncing) {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(6) {
+                        SkeletonMountainRow()
+                    }
+                }
+            } else if (mountains.isEmpty() && !isSyncing) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     VStackEmptyState(searchQuery = searchQuery, onContribute = onNavigateToAddCustom)
                 }
@@ -556,5 +573,81 @@ private fun VStackEmptyState(searchQuery: String, onContribute: () -> Unit) {
             Spacer(modifier = Modifier.width(8.dp))
             Text("Contribute Missing Mountain", color = Color.White, fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+@Composable
+fun SkeletonMountainRow() {
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(alpha)
+            .background(Color.White)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(Color(0xFFE8EAED), shape = RoundedCornerShape(12.dp))
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .height(20.dp)
+                        .fillMaxWidth(0.6f)
+                        .background(Color(0xFFE8EAED), shape = RoundedCornerShape(4.dp))
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .height(14.dp)
+                        .fillMaxWidth(0.4f)
+                        .background(Color(0xFFF1F3F4), shape = RoundedCornerShape(4.dp))
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Box(
+                modifier = Modifier
+                    .height(30.dp)
+                    .width(48.dp)
+                    .background(Color(0xFFE8EAED), shape = RoundedCornerShape(4.dp))
+            )
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .background(Color(0xFFF1F3F4), shape = CircleShape)
+            )
+        }
+        HorizontalDivider(
+            color = Color(0xFFF1F3F4),
+            thickness = 1.dp,
+            modifier = Modifier.padding(start = 86.dp)
+        )
     }
 }

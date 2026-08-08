@@ -29,6 +29,7 @@ fun DocumentSnapshot.toHikeLogSafely(): HikeLog? {
         }
 
         val photos = (get("photoUrls") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
+        val waypointsList = (get("waypoints") as? List<*>)?.mapNotNull { it?.toString() } ?: emptyList()
 
         HikeLog(
             id = id,
@@ -38,11 +39,12 @@ fun DocumentSnapshot.toHikeLogSafely(): HikeLog? {
             dateTimeEnd = endMillis,
             didSummit = getBoolean("didSummit") ?: true,
             photoUrls = photos,
-            trailName = getString("trailName"),
-            isTraverse = getBoolean("isTraverse"),
-            exitTrailName = getString("exitTrailName"),
-            trailDifficulty = getString("trailDifficulty"),
-            trailClass = getString("trailClass")
+            trailName = getString("trailName") ?: "",
+            routeType = getString("routeType") ?: "",
+            exitTrailName = getString("exitTrailName") ?: "",
+            trailDifficulty = getString("trailDifficulty") ?: "",
+            trailClass = getString("trailClass") ?: "",
+            waypoints = waypointsList
         )
     } catch (e: Exception) {
         Log.e("FirestoreExtensions", "Error safe-parsing HikeLog for doc $id: ${e.localizedMessage}", e)
@@ -60,10 +62,11 @@ fun HikeLog.toFirestoreMap(): Map<String, Any?> {
         "didSummit" to didSummit,
         "photoUrls" to photoUrls,
         "trailName" to trailName,
-        "isTraverse" to isTraverse,
+        "routeType" to routeType,
         "exitTrailName" to exitTrailName,
         "trailDifficulty" to trailDifficulty,
-        "trailClass" to trailClass
+        "trailClass" to trailClass,
+        "waypoints" to waypoints
     )
 }
 

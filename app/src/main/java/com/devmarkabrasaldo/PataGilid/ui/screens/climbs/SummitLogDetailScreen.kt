@@ -23,6 +23,7 @@ import com.devmarkabrasaldo.PataGilid.ui.theme.FlagCheck
 import com.devmarkabrasaldo.PataGilid.ui.theme.GlobeLocationPin
 import com.devmarkabrasaldo.PataGilid.ui.theme.Elevation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.devmarkabrasaldo.PataGilid.di.AppContainer
@@ -69,13 +70,15 @@ fun InfoRow(
             text = label,
             color = Color(0xFF8E8E93),
             fontSize = 16.sp,
-            modifier = Modifier.weight(1f)
         )
+        Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = value,
             color = valueColor,
             fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f)
         )
         if (showChevron) {
             Spacer(modifier = Modifier.width(8.dp))
@@ -277,36 +280,60 @@ fun SummitLogDetailScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column {
-                        if (hikeLog.isTraverse == true) {
-                            InfoRow(
-                                icon = { Icon(Icons.Default.Route, contentDescription = null, tint = Color(0xFFAF52DE)) },
-                                label = "Climb Style",
-                                value = "Traverse"
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
-                            InfoRow(
-                                icon = { Icon(Start, contentDescription = null, tint = Color(0xFF8E8E93)) },
-                                label = "Start Trail",
-                                value = hikeLog.trailName ?: "N/A"
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
-                            InfoRow(
-                                icon = { Icon(FlagCheck, contentDescription = null, tint = Color(0xFFFF3B30)) },
-                                label = "Exit Trail",
-                                value = hikeLog.exitTrailName ?: "N/A"
-                            )
-                        } else {
-                            InfoRow(
-                                icon = { Icon(UTurnLeft, contentDescription = null, tint = Color(0xFF007AFF)) },
-                                label = "Climb Style",
-                                value = "Back Trail"
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
-                            InfoRow(
-                                icon = { Icon(Icons.Default.SwapVert, contentDescription = null, tint = Color(0xFF8E8E93)) },
-                                label = "Route Name",
-                                value = hikeLog.trailName ?: "N/A"
-                            )
+                        when (hikeLog.routeType) {
+                            "Traverse" -> {
+                                InfoRow(
+                                    icon = { Icon(Icons.Default.Route, contentDescription = null, tint = Color(0xFFAF52DE)) },
+                                    label = "Climb Style",
+                                    value = "Traverse"
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
+                                InfoRow(
+                                    icon = { Icon(Start, contentDescription = null, tint = Color(0xFF8E8E93)) },
+                                    label = "Start Trail",
+                                    value = hikeLog.trailName.ifBlank { "N/A" }
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
+                                InfoRow(
+                                    icon = { Icon(FlagCheck, contentDescription = null, tint = Color(0xFFFF3B30)) },
+                                    label = "Exit Trail",
+                                    value = hikeLog.exitTrailName.ifBlank { "N/A" }
+                                )
+                            }
+                            "Circuit" -> {
+                                InfoRow(
+                                    icon = { Icon(Icons.Default.Loop, contentDescription = null, tint = Color(0xFFFF9500)) },
+                                    label = "Climb Style",
+                                    value = "Circuit"
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
+                                InfoRow(
+                                    icon = { Icon(Start, contentDescription = null, tint = Color(0xFF8E8E93)) },
+                                    label = "Start & End Trail",
+                                    value = hikeLog.trailName.ifBlank { "N/A" }
+                                )
+                                if (hikeLog.waypoints.isNotEmpty()) {
+                                    HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
+                                    InfoRow(
+                                        icon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF34C759)) },
+                                        label = "Waypoints",
+                                        value = hikeLog.waypoints.joinToString(", ")
+                                    )
+                                }
+                            }
+                            else -> { // Back Trail
+                                InfoRow(
+                                    icon = { Icon(UTurnLeft, contentDescription = null, tint = Color(0xFF007AFF)) },
+                                    label = "Climb Style",
+                                    value = "Back Trail"
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
+                                InfoRow(
+                                    icon = { Icon(Icons.Default.SwapVert, contentDescription = null, tint = Color(0xFF8E8E93)) },
+                                    label = "Route Name",
+                                    value = hikeLog.trailName.ifBlank { "N/A" }
+                                )
+                            }
                         }
                         HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                         InfoRow(

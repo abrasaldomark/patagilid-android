@@ -23,6 +23,7 @@ class MountainsViewModel(private val repository: MountainRepository) : ViewModel
     val selectedRegion = MutableStateFlow<String?>(null)
     val sortType = MutableStateFlow(SortType.ELEVATION_HIGH_TO_LOW)
     val isSyncing = MutableStateFlow(false)
+    val syncProgress = MutableStateFlow<Float?>(null)
 
     val allMountains: StateFlow<List<Mountain>> = repository.allMountainsByElevation
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -104,10 +105,16 @@ class MountainsViewModel(private val repository: MountainRepository) : ViewModel
     fun triggerSync() {
         viewModelScope.launch {
             isSyncing.value = true
+            syncProgress.value = null
             try {
-                repository.synchronize()
+                repository.synchronize { applied, total ->
+                    if (total > 0) {
+                        syncProgress.value = applied.toFloat() / total.toFloat()
+                    }
+                }
             } finally {
                 isSyncing.value = false
+                syncProgress.value = null
             }
         }
     }

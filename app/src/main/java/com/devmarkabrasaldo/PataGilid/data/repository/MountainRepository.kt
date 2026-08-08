@@ -25,8 +25,8 @@ class MountainRepository(
     val unapprovedMountains: Flow<List<Mountain>> = mountainDao.getPendingApprovalMountains()
     val pendingGpsMountains: Flow<List<Mountain>> = mountainDao.getPendingGpsMountains()
 
-    suspend fun synchronize() {
-        syncService.synchronizeWithFirestore()
+    suspend fun synchronize(onProgress: ((Int, Int) -> Unit)? = null) {
+        syncService.synchronizeWithFirestore(onProgress)
     }
 
     fun observeMountain(id: String): Flow<Mountain?> = mountainDao.observeMountainById(id)

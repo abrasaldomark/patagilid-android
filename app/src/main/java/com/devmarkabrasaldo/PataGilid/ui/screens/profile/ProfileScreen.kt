@@ -63,7 +63,6 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(PageBackground)
-                    .statusBarsPadding()
                     .padding(top = 12.dp, start = 20.dp, end = 20.dp, bottom = 4.dp)
             ) {
                 Text(

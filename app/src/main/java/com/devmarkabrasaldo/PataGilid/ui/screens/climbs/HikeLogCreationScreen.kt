@@ -25,6 +25,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import com.devmarkabrasaldo.PataGilid.ui.theme.UTurnLeft
 import com.devmarkabrasaldo.PataGilid.ui.theme.Start
@@ -35,6 +41,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.devmarkabrasaldo.PataGilid.di.AppContainer
@@ -53,12 +60,24 @@ fun HikeLogCreationScreen(
     val mountain by vm.mountain.collectAsState()
     val trailName by vm.trailName.collectAsState()
     val didSummit by vm.didSummit.collectAsState()
-    val isTraverse by vm.isTraverse.collectAsState()
+    val routeType by vm.routeType.collectAsState()
+    val activeRouteColor = Color(0xFF3B82F6)
+    val activeRouteBg = Color(0xFFEFF6FF)
     val exitTrailName by vm.exitTrailName.collectAsState()
+    val waypoints by vm.waypoints.collectAsState()
     val selectedAssets by vm.selectedAssets.collectAsState()
     val isSubmitting by vm.isSubmitting.collectAsState()
     val uploadProgress by vm.uploadProgress.collectAsState()
     val errorMessage by vm.errorMessage.collectAsState()
+    val focusManager = LocalFocusManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            vm.clearError()
+        }
+    }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 20)
@@ -75,6 +94,7 @@ fun HikeLogCreationScreen(
 
     Scaffold(
         containerColor = Color.White,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(text = "Log Ascent", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 17.sp) },
@@ -104,6 +124,11 @@ fun HikeLogCreationScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus()
+                    })
+                }
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -142,9 +167,9 @@ fun HikeLogCreationScreen(
                 }
             }
 
-            // Activity Parameters
+            // Climb Info
             Column {
-                Text("Activity Parameters", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text("Climb Info", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -190,8 +215,8 @@ fun HikeLogCreationScreen(
                             // Summited Button
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (didSummit) Color(0xFFFFF7ED) else Color(0xFFF9FAFB),
-                                border = BorderStroke(2.dp, if (didSummit) Color(0xFFFF9500) else Color.Transparent),
+                                color = if (didSummit) activeRouteBg else Color(0xFFF9FAFB),
+                                border = BorderStroke(2.dp, if (didSummit) activeRouteColor else Color.Transparent),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(90.dp)
@@ -202,9 +227,9 @@ fun HikeLogCreationScreen(
                                     verticalArrangement = Arrangement.Center,
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    Icon(Icons.Default.Terrain, contentDescription = null, tint = if (didSummit) Color(0xFFFF9500) else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
+                                    Icon(Icons.Default.Terrain, contentDescription = null, tint = if (didSummit) activeRouteColor else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Summited", color = if (didSummit) Color(0xFFFF9500) else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("Summited", color = if (didSummit) activeRouteColor else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                     Text("Reached Top", color = if (didSummit) Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 11.sp)
                                 }
                             }
@@ -212,8 +237,8 @@ fun HikeLogCreationScreen(
                             // DNF Button
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (!didSummit) Color(0xFFF3F4F6) else Color(0xFFF9FAFB),
-                                border = BorderStroke(2.dp, Color.Transparent),
+                                color = if (!didSummit) activeRouteBg else Color(0xFFF9FAFB),
+                                border = BorderStroke(2.dp, if (!didSummit) activeRouteColor else Color.Transparent),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(90.dp)
@@ -224,9 +249,9 @@ fun HikeLogCreationScreen(
                                     verticalArrangement = Arrangement.Center,
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    Icon(Icons.Default.Undo, contentDescription = null, tint = if (!didSummit) Color(0xFF6B7280) else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
+                                    Icon(Icons.Default.Undo, contentDescription = null, tint = if (!didSummit) activeRouteColor else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Backed Out (DNF)", color = if (!didSummit) Color(0xFF6B7280) else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("Backed Out (DNF)", color = if (!didSummit) activeRouteColor else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                     Text("Did Not Finish", color = if (!didSummit) Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 11.sp)
                                 }
                             }
@@ -246,51 +271,73 @@ fun HikeLogCreationScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Route Style", color = Color(0xFF9CA3AF), fontSize = 13.sp)
+                        Text("Route Type", color = Color(0xFF9CA3AF), fontSize = 13.sp)
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             // Back Trail Button
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (!isTraverse) Color(0xFFEFF6FF) else Color(0xFFF3F4F6),
-                                border = BorderStroke(2.dp, if (!isTraverse) Color(0xFF3B82F6) else Color.Transparent),
+                                color = if (routeType == "Back Trail") activeRouteBg else Color(0xFFF3F4F6),
+                                border = BorderStroke(2.dp, if (routeType == "Back Trail") activeRouteColor else Color.Transparent),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(90.dp)
-                                    .clickable { vm.isTraverse.value = false }
+                                    .clickable { vm.routeType.value = "Back Trail" }
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 16.dp)
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 8.dp)
                                 ) {
-                                    Icon(UTurnLeft, contentDescription = null, tint = if (!isTraverse) Color(0xFF3B82F6) else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
+                                    Icon(UTurnLeft, contentDescription = null, tint = if (routeType == "Back Trail") activeRouteColor else Color(0xFF9CA3AF), modifier = Modifier.size(24.dp))
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Back Trail", color = if (!isTraverse) Color(0xFF3B82F6) else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("Same Start & Exit", color = if (!isTraverse) Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 11.sp)
+                                    Text("Back Trail", color = if (routeType == "Back Trail") activeRouteColor else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text("Same Start & Exit", color = if (routeType == "Back Trail") Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 10.sp, textAlign = TextAlign.Center)
                                 }
                             }
                             
                             // Traverse Button
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isTraverse) Color(0xFFEFF6FF) else Color(0xFFF3F4F6),
-                                border = BorderStroke(2.dp, if (isTraverse) Color(0xFF3B82F6) else Color.Transparent),
+                                color = if (routeType == "Traverse") activeRouteBg else Color(0xFFF3F4F6),
+                                border = BorderStroke(2.dp, if (routeType == "Traverse") activeRouteColor else Color.Transparent),
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(90.dp)
-                                    .clickable { vm.isTraverse.value = true }
+                                    .clickable { vm.routeType.value = "Traverse" }
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 16.dp)
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 8.dp)
                                 ) {
-                                    Icon(Icons.Default.Route, contentDescription = null, tint = if (isTraverse) Color(0xFF3B82F6) else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
+                                    Icon(Icons.Default.Route, contentDescription = null, tint = if (routeType == "Traverse") activeRouteColor else Color(0xFF9CA3AF), modifier = Modifier.size(24.dp))
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Traverse", color = if (isTraverse) Color(0xFF3B82F6) else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("Different Exit Trail", color = if (isTraverse) Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 11.sp)
+                                    Text("Traverse", color = if (routeType == "Traverse") activeRouteColor else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text("Different Exit", color = if (routeType == "Traverse") Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 10.sp, textAlign = TextAlign.Center)
+                                }
+                            }
+
+                            // Circuit Button
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (routeType == "Circuit") activeRouteBg else Color(0xFFF3F4F6),
+                                border = BorderStroke(2.dp, if (routeType == "Circuit") activeRouteColor else Color.Transparent),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(90.dp)
+                                    .clickable { vm.routeType.value = "Circuit" }
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 8.dp)
+                                ) {
+                                    Icon(Icons.Default.Loop, contentDescription = null, tint = if (routeType == "Circuit") activeRouteColor else Color(0xFF9CA3AF), modifier = Modifier.size(24.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Circuit", color = if (routeType == "Circuit") activeRouteColor else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text("Loop to Start", color = if (routeType == "Circuit") Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 10.sp, textAlign = TextAlign.Center)
                                 }
                             }
                         }
@@ -299,19 +346,26 @@ fun HikeLogCreationScreen(
                         
                         // Trail Names
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(if (!isTraverse) UTurnLeft else Start, contentDescription = null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(24.dp))
+                            Icon(if (routeType == "Back Trail") UTurnLeft else if (routeType == "Circuit") Icons.Default.Loop else Start, contentDescription = null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
-                                Text(if (!isTraverse) "Back Trail Name (Start & Exit)" else "Start Trail", color = Color(0xFF9CA3AF), fontSize = 13.sp)
+                                Text(
+                                    if (routeType == "Back Trail") "Trail Name (Entry & Exit)" 
+                                    else if (routeType == "Circuit") "Entry & Exit"
+                                    else "Entry Trail", 
+                                    color = Color(0xFF9CA3AF), fontSize = 13.sp
+                                )
                                 BasicTextField(
                                     value = trailName,
                                     onValueChange = { vm.trailName.value = it },
                                     textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
                                     cursorBrush = SolidColor(Color(0xFF3B82F6)),
                                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                     decorationBox = { innerTextField ->
                                         if (trailName.isEmpty()) {
-                                            Text("e.g. Salacafe Trail", color = Color(0xFFD1D5DB), fontSize = 16.sp)
+                                            Text(if (routeType == "Circuit") "e.g. Sta. Cruz Circuit" else "e.g. Salacafe Trail", color = Color(0xFFD1D5DB), fontSize = 16.sp)
                                         }
                                         innerTextField()
                                     }
@@ -319,7 +373,7 @@ fun HikeLogCreationScreen(
                             }
                         }
                         
-                        if (isTraverse) {
+                        if (routeType == "Traverse") {
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(FlagCheck, contentDescription = null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(24.dp))
@@ -332,6 +386,8 @@ fun HikeLogCreationScreen(
                                         textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
                                         cursorBrush = SolidColor(Color(0xFF3B82F6)),
                                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                         decorationBox = { innerTextField ->
                                             if (exitTrailName.isEmpty()) {
                                                 Text("e.g. Ambangeg Trail", color = Color(0xFFD1D5DB), fontSize = 16.sp)
@@ -343,11 +399,69 @@ fun HikeLogCreationScreen(
                             }
                         }
                         
+                        if (routeType == "Circuit") {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(verticalAlignment = Alignment.Top) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .background(Color(0xFF9CA3AF), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocationOn,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Waypoints", color = Color(0xFF9CA3AF), fontSize = 13.sp)
+                                        TextButton(
+                                            onClick = { vm.addWaypoint() }, 
+                                            contentPadding = PaddingValues(0.dp),
+                                            modifier = Modifier.height(24.dp).defaultMinSize(minWidth = 1.dp, minHeight = 1.dp)
+                                        ) {
+                                            Text("+ Add", color = Color(0xFF3B82F6), fontSize = 14.sp)
+                                        }
+                                    }
+                                    
+                                    waypoints.forEachIndexed { index, waypoint ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                        ) {
+                                            BasicTextField(
+                                                value = waypoint,
+                                                onValueChange = { vm.updateWaypoint(index, it) },
+                                                textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+                                                cursorBrush = SolidColor(Color(0xFF3B82F6)),
+                                                modifier = Modifier.weight(1f),
+                                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                                decorationBox = { innerTextField ->
+                                                    if (waypoint.isEmpty()) {
+                                                        Text("e.g. Lake Venado", color = Color(0xFFD1D5DB), fontSize = 16.sp)
+                                                    }
+                                                    innerTextField()
+                                                }
+                                            )
+                                            IconButton(onClick = { vm.removeWaypoint(index) }, modifier = Modifier.size(24.dp)) {
+                                                Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color(0xFF9CA3AF))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
                         Divider(color = Color(0xFFE5E7EB), modifier = Modifier.padding(vertical = 16.dp))
                         
                         // Experienced Difficulty
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Speed, contentDescription = null, tint = Color(0xFFFF9500), modifier = Modifier.size(24.dp))
+                            Icon(Icons.Default.Speed, contentDescription = null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text("Experienced Difficulty", color = Color(0xFF9CA3AF), fontSize = 13.sp)
@@ -432,9 +546,6 @@ fun HikeLogCreationScreen(
                 }
             }
             
-            if (errorMessage != null) {
-                Text(errorMessage!!, color = Color(0xFFEF4444), fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
-            }
             if (isSubmitting && uploadProgress != null) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
                     CircularProgressIndicator(color = Color(0xFF3A82F5), modifier = Modifier.size(20.dp), strokeWidth = 2.dp)

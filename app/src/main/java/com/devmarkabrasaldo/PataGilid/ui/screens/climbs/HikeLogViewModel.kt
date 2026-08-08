@@ -24,8 +24,9 @@ class HikeLogViewModel(
     
     val trailName = MutableStateFlow("")
     val didSummit = MutableStateFlow(true)
-    val isTraverse = MutableStateFlow(false)
+    val routeType = MutableStateFlow("Back Trail")
     val exitTrailName = MutableStateFlow("")
+    val waypoints = MutableStateFlow<List<String>>(emptyList())
     val startDate = MutableStateFlow(System.currentTimeMillis() - 86400000L) // Yesterday
     val endDate = MutableStateFlow(System.currentTimeMillis())
     
@@ -56,7 +57,44 @@ class HikeLogViewModel(
         selectedAssets.value = selectedAssets.value.filter { it != asset }
     }
 
+    fun addWaypoint() {
+        waypoints.value = waypoints.value + ""
+    }
+
+    fun updateWaypoint(index: Int, newValue: String) {
+        val list = waypoints.value.toMutableList()
+        if (index in list.indices) {
+            list[index] = newValue
+            waypoints.value = list
+        }
+    }
+
+    fun removeWaypoint(index: Int) {
+        val list = waypoints.value.toMutableList()
+        if (index in list.indices) {
+            list.removeAt(index)
+            waypoints.value = list
+        }
+    }
+
+    fun clearError() {
+        errorMessage.value = null
+    }
+
     fun submitHikeLog(onSuccess: () -> Unit) {
+        if (trailName.value.isBlank()) {
+            errorMessage.value = "Please enter the Trail Name."
+            return
+        }
+        if (routeType.value == "Traverse" && exitTrailName.value.isBlank()) {
+            errorMessage.value = "Please enter the Exit Trail Name."
+            return
+        }
+        if (routeType.value == "Circuit" && waypoints.value.none { it.isNotBlank() }) {
+            errorMessage.value = "Please add at least one Waypoint."
+            return
+        }
+
         viewModelScope.launch {
             isSubmitting.value = true
             errorMessage.value = null
@@ -74,9 +112,10 @@ class HikeLogViewModel(
                     dateTimeEnd = endDate.value,
                     didSummit = didSummit.value,
                     photoUrls = drivePhotoUrls,
-                    trailName = trailName.value.ifBlank { "Main Trail" },
-                    isTraverse = isTraverse.value,
-                    exitTrailName = if (isTraverse.value) exitTrailName.value else null
+                    trailName = trailName.value,
+                    routeType = routeType.value,
+                    exitTrailName = if (routeType.value == "Traverse") exitTrailName.value else "",
+                    waypoints = if (routeType.value == "Circuit") waypoints.value.filter { it.isNotBlank() } else emptyList()
                 )
                 mountainRepository.saveHikeLog(log)
                 isSubmitting.value = false
