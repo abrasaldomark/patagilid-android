@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "369922125368",
+    "project_id": "patagilid-a37cb",
+    "storage_bucket": "patagilid-a37cb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:369922125368:android:2c98abd28b5afd0c7d40cd",
+        "android_client_info": {
+          "package_name": "com.devmarkabrasaldo.PataGilid"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "369922125368-7ktmc6fe9ueu31n443u45tmmitf66s9k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.devmarkabrasaldo.PataGilid",
+            "certificate_hash": "c3d76a1c9ead3aafaa2d0124e4c0bf38cb6884b6"
+          }
+        },
+        {
+          "client_id": "369922125368-0ofb8s8cqg80q46oinggl4gp5prksl2l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4zdBqeSO1jiTP5Wz4lMdS2G0VyaLTwkM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "369922125368-0ofb8s8cqg80q46oinggl4gp5prksl2l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "369922125368-cjth56nmpihl8t0jtti6dsmt3spl7p6f.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.devmarkabrasaldo.PataGilid"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

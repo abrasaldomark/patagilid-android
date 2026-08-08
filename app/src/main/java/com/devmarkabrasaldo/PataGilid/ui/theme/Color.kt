@@ -2,6 +2,13 @@ package com.devmarkabrasaldo.PataGilid.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val GliderBlue = Color(0xFF3A82F5)
+val SummitSteel = Color(0xFF94A3B8)
+val OrangeAccent = Color(0xFFFF9500)
+val DarkBackground = Color(0xFF0F172A)
+val DarkSurface = Color(0xFF1E293B)
+val DarkSurfaceVariant = Color(0xFF334155)
+
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
 val Pink80 = Color(0xFFEFB8C8)
