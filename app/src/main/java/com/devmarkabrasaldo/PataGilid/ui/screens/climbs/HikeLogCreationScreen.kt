@@ -235,9 +235,9 @@ fun HikeLogCreationScreen(
                 }
             }
 
-            // Trail & Traverse Details
+            // Trail Details
             Column {
-                Text("Trail & Traverse Details", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text("Trail Details", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Surface(
