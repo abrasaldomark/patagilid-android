@@ -201,7 +201,7 @@ fun ProfileScreen(
                             Icon(
                                 Icons.Default.Checklist,
                                 contentDescription = null,
-                                tint = AdminOrange,
+                                tint = Color(0xFF94A3B8),
                                 modifier = Modifier.size(26.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
@@ -213,15 +213,19 @@ fun ProfileScreen(
                                 modifier = Modifier.weight(1f)
                             )
                             if (pendingCount > 0) {
-                                Text(
-                                    "$pendingCount",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
+                                Box(
                                     modifier = Modifier
-                                        .background(AdminOrange, CircleShape)
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
+                                        .size(24.dp)
+                                        .background(DestructiveRed, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "$pendingCount",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
                             } else {
                                 Text(
                                     "0 Pending",
