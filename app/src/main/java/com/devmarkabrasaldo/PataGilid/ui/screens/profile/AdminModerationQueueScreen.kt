@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.devmarkabrasaldo.PataGilid.data.repository.MountainRepository
 import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
+import com.devmarkabrasaldo.PataGilid.ui.screens.mountains.MountainMapView
 import com.devmarkabrasaldo.PataGilid.ui.theme.GlobeLocationPin
 import kotlinx.coroutines.launch
 
@@ -85,6 +86,40 @@ fun AdminModerationQueueScreen(
                         actionFeedback = "🔀 Merged '${mountainToMerge!!.name}' into official '${target.name}'. All user climb logs re-linked safely!"
                     } catch (e: Exception) {
                         actionFeedback = "⚠️ Failed to merge: ${e.localizedMessage}"
+                    }
+                    isProcessing = false
+                }
+            }
+        )
+    }
+    
+    var mountainToViewMap by remember { mutableStateOf<Mountain?>(null) }
+    
+    mountainToViewMap?.let { peak ->
+        MountainMapView(
+            mountain = peak,
+            isAdmin = true,
+            onDismiss = { mountainToViewMap = null },
+            onUpdateProposal = { lat, lng ->
+                coroutineScope.launch {
+                    isProcessing = true
+                    try {
+                        repository.updateGpsProposal(peak.id, lat, lng)
+                        actionFeedback = "✏️ GPS proposal updated successfully."
+                    } catch (e: Exception) {
+                        actionFeedback = "⚠️ Failed to update GPS proposal: ${e.localizedMessage}"
+                    }
+                    isProcessing = false
+                }
+            },
+            onApprove = { lat, lng ->
+                coroutineScope.launch {
+                    isProcessing = true
+                    try {
+                        repository.applyAdjustedGpsCalibration(peak.id, lat, lng)
+                        actionFeedback = "✅ Adjusted GPS coordinates approved & broadcasted nationwide!"
+                    } catch (e: Exception) {
+                        actionFeedback = "⚠️ Failed to approve GPS: ${e.localizedMessage}"
                     }
                     isProcessing = false
                 }
@@ -204,16 +239,7 @@ fun AdminModerationQueueScreen(
                             PendingGpsCard(
                                 peak = peak,
                                 onViewMap = {
-                                    val lat = peak.pendingLatitude ?: 0.0
-                                    val lng = peak.pendingLongitude ?: 0.0
-                                    val uri = Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(peak.name)})")
-                                    val intent = Intent(Intent.ACTION_VIEW, uri)
-                                    intent.setPackage("com.google.android.apps.maps")
-                                    if (intent.resolveActivity(context.packageManager) != null) {
-                                        context.startActivity(intent)
-                                    } else {
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                                    }
+                                    mountainToViewMap = peak
                                 },
                                 onReject = {
                                     coroutineScope.launch {
@@ -484,7 +510,7 @@ fun PendingGpsCard(
                         Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = Green, modifier = Modifier.size(12.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "⭐️ Confirmed accurate by ${peak.pendingVerifications} community mountaineer" + if (peak.pendingVerifications > 1) "s" else "",
+                            text = "⭐️ Upvoted by ${peak.pendingVerifications} community mountaineer" + if (peak.pendingVerifications > 1) "s" else "",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = Green

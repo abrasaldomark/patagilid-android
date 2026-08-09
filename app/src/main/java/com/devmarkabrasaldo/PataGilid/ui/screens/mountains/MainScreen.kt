@@ -77,9 +77,11 @@ fun MainScreen(
             when (selectedTab) {
                 MainTab.MOUNTAINS -> MountainsListScreen(
                     repository = container.mountainRepository,
+                    authRepository = container.authRepository,
                     modifier = padding,
                     onNavigateToDetail = onNavigateToDetail,
-                    onNavigateToAddCustom = onNavigateToAddCustom
+                    onNavigateToAddCustom = onNavigateToAddCustom,
+                    onNavigateToAdminQueue = onNavigateToAdminQueue
                 )
                 MainTab.MY_CLIMBS -> ClimbsListScreen(
                     repository = container.mountainRepository,

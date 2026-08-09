@@ -172,6 +172,35 @@ class MountainRepository(
         synchronize()
     }
 
+    suspend fun applyAdjustedGpsCalibration(mountainId: String, lat: Double, lng: Double) = withContext(Dispatchers.IO) {
+        val ref = db.collection("mountains").document(mountainId)
+        val updateMap = mapOf<String, Any?>(
+            "latitude" to lat,
+            "longitude" to lng,
+            "pendingLatitude" to null,
+            "pendingLongitude" to null,
+            "pendingRegion" to null,
+            "pendingContributorEmail" to null,
+            "pendingContributorName" to null,
+            "pendingVerifications" to 0,
+            "pendingVerifierEmails" to emptyList<String>(),
+            "updatedAt" to Timestamp.now()
+        )
+        ref.update(updateMap).await()
+        synchronize()
+    }
+
+    suspend fun updateGpsProposal(mountainId: String, lat: Double, lng: Double) = withContext(Dispatchers.IO) {
+        val ref = db.collection("mountains").document(mountainId)
+        val updateMap = mapOf<String, Any?>(
+            "pendingLatitude" to lat,
+            "pendingLongitude" to lng,
+            "updatedAt" to Timestamp.now()
+        )
+        ref.update(updateMap).await()
+        synchronize()
+    }
+
     suspend fun mergeMountain(duplicateId: String, targetId: String) = withContext(Dispatchers.IO) {
         val snapshot = db.collectionGroup("hikeLogs")
             .whereEqualTo("mountainId", duplicateId)

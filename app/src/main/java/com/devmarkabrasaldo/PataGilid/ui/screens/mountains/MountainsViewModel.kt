@@ -32,6 +32,13 @@ class MountainsViewModel(private val repository: MountainRepository) : ViewModel
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
+    val pendingReviewsCount: StateFlow<Int> = combine(
+        repository.unapprovedMountains,
+        repository.pendingGpsMountains
+    ) { unapproved, pendingGps ->
+        unapproved.size + pendingGps.size
+    }.stateIn(viewModelScope, SharingStarted.Lazily, 0)
+
     val availableRegions: StateFlow<List<String>> = combine(
         allMountains,
         selectedIslandGroup

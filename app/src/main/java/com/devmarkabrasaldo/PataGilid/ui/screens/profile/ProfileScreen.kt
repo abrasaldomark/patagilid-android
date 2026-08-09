@@ -52,7 +52,8 @@ fun ProfileScreen(
     var pendingCount by remember { mutableIntStateOf(0) }
     if (isAdmin) {
         val unapproved by mountainRepository.unapprovedMountains.collectAsState(initial = emptyList())
-        pendingCount = unapproved.size
+        val pendingGps by mountainRepository.pendingGpsMountains.collectAsState(initial = emptyList())
+        pendingCount = unapproved.size + pendingGps.size
     }
 
     Scaffold(
@@ -69,7 +70,7 @@ fun ProfileScreen(
                     text = "Profile & Settings",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFFFF9500)
+                    color = PrimaryText
                 )
             }
         }

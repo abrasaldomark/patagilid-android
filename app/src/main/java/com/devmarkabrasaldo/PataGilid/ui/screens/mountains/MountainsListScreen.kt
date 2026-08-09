@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devmarkabrasaldo.PataGilid.R
 import com.devmarkabrasaldo.PataGilid.data.repository.MountainRepository
+import com.devmarkabrasaldo.PataGilid.data.repository.AuthRepository
 import com.devmarkabrasaldo.PataGilid.domain.models.IslandGroup
 import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
 import java.text.NumberFormat
@@ -35,13 +36,16 @@ import java.util.Locale
 @Composable
 fun MountainsListScreen(
     repository: MountainRepository,
+    authRepository: AuthRepository,
     modifier: Modifier = Modifier,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToAddCustom: () -> Unit,
+    onNavigateToAdminQueue: () -> Unit,
     vm: MountainsViewModel = viewModel(factory = MountainsViewModel.Factory(repository))
 ) {
     val mountains by vm.mountains.collectAsState()
     val totalCount by vm.totalMountainsCount.collectAsState()
+    val pendingReviewsCount by vm.pendingReviewsCount.collectAsState()
     val searchQuery by vm.searchQuery.collectAsState()
     val selectedIsland by vm.selectedIslandGroup.collectAsState()
     val selectedRegion by vm.selectedRegion.collectAsState()
@@ -49,6 +53,8 @@ fun MountainsListScreen(
     val availableRegions by vm.availableRegions.collectAsState()
     val isSyncing by vm.isSyncing.collectAsState()
     val syncProgress by vm.syncProgress.collectAsState()
+
+    val isAdmin = remember { authRepository.isAdmin }
 
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var isSearchVisible by remember { mutableStateOf(false) }
@@ -243,6 +249,65 @@ fun MountainsListScreen(
                     color = Color(0xFF202124),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
+
+                // Admin Review Queue Banner
+                if (isAdmin) {
+                    val hasPendingReviews = pendingReviewsCount > 0
+                    val bannerColors = if (hasPendingReviews) {
+                        listOf(Color(0xFFFF9500), Color(0xFFFF3B30)) // Orange to Red
+                    } else {
+                        listOf(Color(0xFF34C759), Color(0xFF1E824C)) // Greenish for all clear (mimicking iOS GliderBlue/SummitSteel, but android doesn't have those exact named colors, let's use blue/steel)
+                    }
+                    val actualBannerColors = if (hasPendingReviews) {
+                        listOf(Color(0xFF3A82F5), Color(0xFF1A73E8)) // GliderBlue to Google Blue
+                    } else {
+                        listOf(Color(0xFF67B5FF), Color(0xFF5A728C))
+                    }
+                    val iconVector = if (hasPendingReviews) Icons.Default.Security else Icons.Default.VerifiedUser
+                    
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 0.dp) // iOS banner spans full width or has some padding? Screenshot shows it full width. Wait, screenshot shows full width gradient.
+                            .clickable { onNavigateToAdminQueue() },
+                        shadowElevation = 4.dp,
+                        color = Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .background(androidx.compose.ui.graphics.Brush.horizontalGradient(actualBannerColors))
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = iconVector,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (hasPendingReviews) "🔔 Admin Review Queue" else "Admin Superpowers Active",
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (hasPendingReviews) "$pendingReviewsCount community submission(s) awaiting verification\n• Tap to Action" else "0 pending community submissions\n• All clear!",
+                                    color = Color.White.copy(alpha = 0.95f),
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
 
                 // Search Bar (shown when toggled or active)
                 if (isSearchVisible || searchQuery.isNotBlank()) {
