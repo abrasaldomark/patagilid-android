@@ -43,6 +43,7 @@ fun ProfileScreen(
     onNavigateToDonation: () -> Unit,
     onNavigateToAdminQueue: () -> Unit,
     onNavigateToContributions: () -> Unit,
+    onNavigateToSponsors: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onSignOut: () -> Unit
 ) {
@@ -298,12 +299,72 @@ fun ProfileScreen(
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
-
                     Icon(
                         Icons.Default.QrCode2,
                         contentDescription = "QR Code",
                         tint = SecondaryText,
                         modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = CardBackground),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToSponsors() }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                Color(0xFFE8F0FE),
+                                RoundedCornerShape(10.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Favorite,
+                            contentDescription = null,
+                            tint = Color(0xFF1A73E8),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Donators & Sponsors",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PrimaryText
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            "See the organizations and hikers who make PataGilid possible.",
+                            fontSize = 12.sp,
+                            color = SecondaryText,
+                            lineHeight = 16.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "Navigate to sponsors",
+                        tint = Color(0xFFC7C7CC),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }

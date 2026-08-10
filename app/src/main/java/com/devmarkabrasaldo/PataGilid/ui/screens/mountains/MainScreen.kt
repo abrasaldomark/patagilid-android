@@ -32,6 +32,7 @@ fun MainScreen(
     onNavigateToDonation: () -> Unit,
     onNavigateToAdminQueue: () -> Unit,
     onNavigateToContributions: () -> Unit,
+    onNavigateToSponsors: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onSignOut: () -> Unit
 ) {
@@ -96,6 +97,7 @@ fun MainScreen(
                     onNavigateToDonation = onNavigateToDonation,
                     onNavigateToAdminQueue = onNavigateToAdminQueue,
                     onNavigateToContributions = onNavigateToContributions,
+                    onNavigateToSponsors = onNavigateToSponsors,
                     onNavigateToOnboarding = onNavigateToOnboarding,
                     onSignOut = onSignOut
                 )

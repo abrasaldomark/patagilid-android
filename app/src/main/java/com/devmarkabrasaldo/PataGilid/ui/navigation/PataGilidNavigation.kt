@@ -33,6 +33,7 @@ object Screen {
     const val DONATION_QR = "donation_qr"
     const val ADMIN_MODERATION = "admin_moderation"
     const val USER_CONTRIBUTIONS = "user_contributions"
+    const val SPONSORS = "sponsors"
 
     fun mountainDetail(mountainId: String) = "mountain_detail/$mountainId"
     fun hikeLogCreation(mountainId: String) = "hike_log_creation/$mountainId"
@@ -94,6 +95,7 @@ fun PataGilidNavigation(container: AppContainer) {
                 onNavigateToDonation = { navController.navigate(Screen.DONATION_QR) },
                 onNavigateToAdminQueue = { navController.navigate(Screen.ADMIN_MODERATION) },
                 onNavigateToContributions = { navController.navigate(Screen.USER_CONTRIBUTIONS) },
+                onNavigateToSponsors = { navController.navigate(Screen.SPONSORS) },
                 onNavigateToOnboarding = { navController.navigate(Screen.ONBOARDING) },
                 onSignOut = {
                     navController.navigate(Screen.LOGIN) {
@@ -107,6 +109,12 @@ fun PataGilidNavigation(container: AppContainer) {
             com.devmarkabrasaldo.PataGilid.ui.screens.profile.UserContributionsScreen(
                 mountainRepository = container.mountainRepository,
                 authRepository = container.authRepository,
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        composable(Screen.SPONSORS) {
+            com.devmarkabrasaldo.PataGilid.ui.screens.profile.SponsorsScreen(
                 onNavigateBack = { navController.navigateUp() }
             )
         }
