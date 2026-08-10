@@ -159,7 +159,6 @@ fun HikeLogCreationScreen(
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("TARGET SUMMIT", color = Color(0xFF9CA3AF), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         Text(mountain?.name ?: "Peak", color = Color.Black, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                         Text("${mountain?.elevationMASL ?: 0} MASL", color = Color(0xFF94A3B8), fontSize = 13.sp)
                         Text(mountain?.region ?: "", color = Color(0xFF94A3B8), fontSize = 13.sp)

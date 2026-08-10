@@ -542,7 +542,7 @@ fun ClimbsListScreen(
                             }
                             Spacer(modifier = Modifier.height(24.dp))
                             Text(
-                                text = "No Logs Yet",
+                                text = "Akyat na!",
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 22.sp

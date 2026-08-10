@@ -31,6 +31,7 @@ fun MainScreen(
     onNavigateToHikeLogDetail: (String) -> Unit,
     onNavigateToDonation: () -> Unit,
     onNavigateToAdminQueue: () -> Unit,
+    onNavigateToContributions: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onSignOut: () -> Unit
 ) {
@@ -94,6 +95,7 @@ fun MainScreen(
                     modifier = padding,
                     onNavigateToDonation = onNavigateToDonation,
                     onNavigateToAdminQueue = onNavigateToAdminQueue,
+                    onNavigateToContributions = onNavigateToContributions,
                     onNavigateToOnboarding = onNavigateToOnboarding,
                     onSignOut = onSignOut
                 )

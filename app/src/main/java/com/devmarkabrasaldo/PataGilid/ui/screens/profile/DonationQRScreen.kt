@@ -110,10 +110,10 @@ fun DonationQRScreen(onNavigateBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Header
-            Text("☕️", fontSize = 56.sp)
+            Text("⛰️", fontSize = 56.sp)
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Buy Me a Coffee",
+                text = "Pang akyat lang",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
                 color = PrimaryText

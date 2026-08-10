@@ -234,7 +234,7 @@ fun MountainDetailScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Specs
-            Text("Summit Specifications", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+            Text("Mountain Details", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
             Spacer(modifier = Modifier.height(12.dp))
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -591,7 +591,7 @@ fun MountainDetailScreen(
         if (showMapDialog) {
             MapCalibrationDialog(
                 onDismiss = { showMapDialog = false },
-                onLocationPinned = { loc -> pinnedLocation = loc },
+                onLocationPinned = { loc, _ -> pinnedLocation = loc },
                 initialLocation = pinnedLocation
             )
         }

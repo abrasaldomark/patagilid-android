@@ -54,6 +54,7 @@ fun AdminModerationQueueScreen(
 
     var isProcessing by remember { mutableStateOf(false) }
     var actionFeedback by remember { mutableStateOf<String?>(null) }
+    var selectedTabIndex by remember { mutableStateOf(0) }
     
     var mountainToMerge by remember { mutableStateOf<Mountain?>(null) }
     
@@ -179,94 +180,130 @@ fun AdminModerationQueueScreen(
                     )
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Section 1: Community Mountains
-                    if (unapprovedPeaks.isNotEmpty()) {
-                        item {
-                            SectionHeader(
-                                title = "Pending Community Mountains (${unapprovedPeaks.size})",
-                                footer = "Approved mountains go live instantly on the public list. Merged mountains re-link contributor logs to an official entry and remove the duplicate."
-                            )
-                        }
-                        
-                        items(unapprovedPeaks, key = { it.id }) { peak ->
-                            PendingPeakCard(
-                                peak = peak,
-                                onReject = {
-                                    coroutineScope.launch {
-                                        isProcessing = true
-                                        try {
-                                            repository.deleteMountain(peak.id)
-                                            actionFeedback = "🗑️ ${peak.name} was rejected and removed from the review queue."
-                                        } catch (e: Exception) {
-                                            actionFeedback = "⚠️ Failed to decline: ${e.localizedMessage}"
-                                        }
-                                        isProcessing = false
-                                    }
-                                },
-                                onMerge = { mountainToMerge = peak },
-                                onApprove = {
-                                    coroutineScope.launch {
-                                        isProcessing = true
-                                        try {
-                                            repository.approveCustomMountain(peak.id)
-                                            actionFeedback = "✅ ${peak.name} has been approved and is now live nationwide in PataGilid!"
-                                        } catch (e: Exception) {
-                                            actionFeedback = "⚠️ Failed to approve: ${e.localizedMessage}"
-                                        }
-                                        isProcessing = false
-                                    }
-                                }
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
+                Column(modifier = Modifier.fillMaxSize()) {
+                    TabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        containerColor = PageBackground,
+                        contentColor = PrimaryText
+                    ) {
+                        Tab(
+                            selected = selectedTabIndex == 0,
+                            onClick = { selectedTabIndex = 0 },
+                            text = { Text("Submitted Mountains", fontWeight = if (selectedTabIndex == 0) FontWeight.Bold else FontWeight.Normal) }
+                        )
+                        Tab(
+                            selected = selectedTabIndex == 1,
+                            onClick = { selectedTabIndex = 1 },
+                            text = { Text("GPS Calibrations", fontWeight = if (selectedTabIndex == 1) FontWeight.Bold else FontWeight.Normal) }
+                        )
                     }
 
-                    // Section 2: GPS Calibrations
-                    if (pendingGpsPeaks.isNotEmpty()) {
-                        item {
-                            SectionHeader(
-                                title = "Pending GPS Calibrations (${pendingGpsPeaks.size})",
-                                footer = "Approved coordinates immediately calibrate the official mountain entry and grant a verified community badge nationwide via Delta-Sync."
-                            )
-                        }
-
-                        items(pendingGpsPeaks, key = { it.id + "gps" }) { peak ->
-                            PendingGpsCard(
-                                peak = peak,
-                                onViewMap = {
-                                    mountainToViewMap = peak
-                                },
-                                onReject = {
-                                    coroutineScope.launch {
-                                        isProcessing = true
-                                        try {
-                                            repository.declineGPS(peak.id)
-                                            actionFeedback = "🗑️ GPS submission rejected."
-                                        } catch (e: Exception) {
-                                            actionFeedback = "⚠️ Failed to reject GPS: ${e.localizedMessage}"
-                                        }
-                                        isProcessing = false
-                                    }
-                                },
-                                onApprove = {
-                                    coroutineScope.launch {
-                                        isProcessing = true
-                                        try {
-                                            repository.applyGpsCalibration(peak.id)
-                                            actionFeedback = "✅ GPS coordinates for '${peak.name}' approved & broadcasted nationwide via Delta-Sync!"
-                                        } catch (e: Exception) {
-                                            actionFeedback = "⚠️ Failed to approve GPS: ${e.localizedMessage}"
-                                        }
-                                        isProcessing = false
-                                    }
+                    if (selectedTabIndex == 0) {
+                        if (unapprovedPeaks.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("No community mountains pending review.", color = SecondaryText)
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                item {
+                                    SectionHeader(
+                                        title = "Pending Submitted Mountains (${unapprovedPeaks.size})",
+                                        footer = "Approved mountains go live instantly on the public list. Merged mountains re-link contributor logs to an official entry and remove the duplicate."
+                                    )
                                 }
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
+                                
+                                items(unapprovedPeaks, key = { it.id }) { peak ->
+                                    PendingPeakCard(
+                                        peak = peak,
+                                        onViewMap = {
+                                            mountainToViewMap = peak
+                                        },
+                                        onReject = {
+                                            coroutineScope.launch {
+                                                isProcessing = true
+                                                try {
+                                                    repository.deleteMountain(peak.id)
+                                                    actionFeedback = "🗑️ ${peak.name} was rejected and removed from the review queue."
+                                                } catch (e: Exception) {
+                                                    actionFeedback = "⚠️ Failed to decline: ${e.localizedMessage}"
+                                                }
+                                                isProcessing = false
+                                            }
+                                        },
+                                        onMerge = { mountainToMerge = peak },
+                                        onApprove = {
+                                            coroutineScope.launch {
+                                                isProcessing = true
+                                                try {
+                                                    repository.approveCustomMountain(peak.id)
+                                                    actionFeedback = "✅ ${peak.name} has been approved and is now live nationwide in PataGilid!"
+                                                } catch (e: Exception) {
+                                                    actionFeedback = "⚠️ Failed to approve: ${e.localizedMessage}"
+                                                }
+                                                isProcessing = false
+                                            }
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+                            }
+                        }
+                    } else {
+                        if (pendingGpsPeaks.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("No GPS calibrations pending review.", color = SecondaryText)
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                item {
+                                    SectionHeader(
+                                        title = "Pending GPS Calibrations (${pendingGpsPeaks.size})",
+                                        footer = "Approved coordinates immediately calibrate the official mountain entry and grant a verified community badge nationwide via Delta-Sync."
+                                    )
+                                }
+
+                                items(pendingGpsPeaks, key = { it.id + "gps" }) { peak ->
+                                    PendingGpsCard(
+                                        peak = peak,
+                                        onViewMap = {
+                                            mountainToViewMap = peak
+                                        },
+                                        onReject = {
+                                            coroutineScope.launch {
+                                                isProcessing = true
+                                                try {
+                                                    repository.declineGPS(peak.id)
+                                                    actionFeedback = "🗑️ GPS submission rejected."
+                                                } catch (e: Exception) {
+                                                    actionFeedback = "⚠️ Failed to reject GPS: ${e.localizedMessage}"
+                                                }
+                                                isProcessing = false
+                                            }
+                                        },
+                                        onApprove = {
+                                            coroutineScope.launch {
+                                                isProcessing = true
+                                                try {
+                                                    repository.applyGpsCalibration(peak.id)
+                                                    actionFeedback = "✅ GPS coordinates for '${peak.name}' approved & broadcasted nationwide via Delta-Sync!"
+                                                } catch (e: Exception) {
+                                                    actionFeedback = "⚠️ Failed to approve GPS: ${e.localizedMessage}"
+                                                }
+                                                isProcessing = false
+                                            }
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+                            }
                         }
                     }
                 }
@@ -313,6 +350,7 @@ fun SectionHeader(title: String, footer: String) {
 @Composable
 fun PendingPeakCard(
     peak: Mountain,
+    onViewMap: () -> Unit,
     onReject: () -> Unit,
     onMerge: () -> Unit,
     onApprove: () -> Unit
@@ -383,6 +421,24 @@ fun PendingPeakCard(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            // View Map
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SecondaryText.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                    .clickable { onViewMap() }
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Map, contentDescription = null, tint = PrimaryText, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("View Map", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Actions
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -522,23 +578,26 @@ fun PendingGpsCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Actions
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // View Map
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(SecondaryText.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-                        .clickable { onViewMap() }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Map, contentDescription = null, tint = PrimaryText, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("View Map", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
-                    }
+            // View Map
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SecondaryText.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                    .clickable { onViewMap() }
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Map, contentDescription = null, tint = PrimaryText, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("View Map", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
                 }
+            }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Actions
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Reject
                 Box(
                     modifier = Modifier
@@ -624,7 +683,12 @@ fun MergeMountainSelectionDialog(
                     .fillMaxWidth()
                     .padding(16.dp),
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = PrimaryText,
+                    unfocusedTextColor = PrimaryText,
+                    cursorColor = GliderBlue
+                )
             )
             
             Text(

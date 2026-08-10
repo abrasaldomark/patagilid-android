@@ -32,6 +32,7 @@ object Screen {
     const val PHOTO_GALLERY = "photo_gallery/{startIndex}?urls={urls}"
     const val DONATION_QR = "donation_qr"
     const val ADMIN_MODERATION = "admin_moderation"
+    const val USER_CONTRIBUTIONS = "user_contributions"
 
     fun mountainDetail(mountainId: String) = "mountain_detail/$mountainId"
     fun hikeLogCreation(mountainId: String) = "hike_log_creation/$mountainId"
@@ -92,12 +93,21 @@ fun PataGilidNavigation(container: AppContainer) {
                 onNavigateToHikeLogDetail = { logId -> navController.navigate(Screen.summitLogDetail(logId)) },
                 onNavigateToDonation = { navController.navigate(Screen.DONATION_QR) },
                 onNavigateToAdminQueue = { navController.navigate(Screen.ADMIN_MODERATION) },
+                onNavigateToContributions = { navController.navigate(Screen.USER_CONTRIBUTIONS) },
                 onNavigateToOnboarding = { navController.navigate(Screen.ONBOARDING) },
                 onSignOut = {
                     navController.navigate(Screen.LOGIN) {
                         popUpTo(Screen.MAIN) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Screen.USER_CONTRIBUTIONS) {
+            com.devmarkabrasaldo.PataGilid.ui.screens.profile.UserContributionsScreen(
+                mountainRepository = container.mountainRepository,
+                authRepository = container.authRepository,
+                onNavigateBack = { navController.navigateUp() }
             )
         }
 
@@ -117,7 +127,11 @@ fun PataGilidNavigation(container: AppContainer) {
         composable(Screen.ADD_CUSTOM_MOUNTAIN) {
             AddCustomMountainScreen(
                 container = container,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onMountainAdded = { mountainId ->
+                    navController.popBackStack()
+                    navController.navigate(Screen.mountainDetail(mountainId))
+                }
             )
         }
 

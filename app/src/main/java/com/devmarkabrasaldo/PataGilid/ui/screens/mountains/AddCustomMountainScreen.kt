@@ -33,7 +33,16 @@ import coil.compose.rememberAsyncImagePainter
 import com.devmarkabrasaldo.PataGilid.di.AppContainer
 import com.devmarkabrasaldo.PataGilid.domain.models.IslandGroup
 import com.devmarkabrasaldo.PataGilid.domain.models.RegionHelper
+import android.location.Geocoder
+import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.Locale
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import com.devmarkabrasaldo.PataGilid.BuildConfig
 
 private val defaultRegionsByIslandGroup = RegionHelper.canonicalRegionsByIslandGroup
 
@@ -63,11 +72,13 @@ private val trailClassOptions = listOf(
 @Composable
 fun AddCustomMountainScreen(
     container: AppContainer,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onMountainAdded: (String) -> Unit
 ) {
     val repository = container.mountainRepository
     val photoUploadService = container.photoUploadService
     val userPhotoService = container.userMountainPhotoService
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val coroutineScope = rememberCoroutineScope()
     var name by remember { mutableStateOf("") }
@@ -77,8 +88,6 @@ fun AddCustomMountainScreen(
     var difficulty by remember { mutableStateOf("3/9 (Minor)") }
     var trailClass by remember { mutableStateOf("Class 1-2") }
     var description by remember { mutableStateOf("") }
-    var selectedPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    
     var isSubmitting by remember { mutableStateOf(false) }
     var statusText by remember { mutableStateOf("Saving mountain...") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -86,6 +95,12 @@ fun AddCustomMountainScreen(
     var showRegionDialog by remember { mutableStateOf(false) }
     var showDifficultyDialog by remember { mutableStateOf(false) }
     var showTrailClassDialog by remember { mutableStateOf(false) }
+    
+    var showMapDialog by remember { mutableStateOf(false) }
+    var pinnedLocation by remember { mutableStateOf<LatLng?>(null) }
+    var showOutsidePHAlert by remember { mutableStateOf(false) }
+    var showInfoCard by remember { mutableStateOf(true) }
+    var isFetchingElevation by remember { mutableStateOf(false) }
 
     val allMountains by repository.allMountainsByName.collectAsState(initial = emptyList())
     
@@ -105,20 +120,21 @@ fun AddCustomMountainScreen(
         }
     }
 
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) {
-            selectedPhotoUri = uri
-        }
-    }
-
     val isFormValid = name.isNotBlank() && elevation.toIntOrNull() != null && !isSubmitting
 
     val submitAction: () -> Unit = {
         val elevInt = elevation.toIntOrNull()
+        
+        val cleanInputName = name.replace(Regex("(?i)Mt\\.?|Mount"), "").trim()
+        val isDuplicate = allMountains.any { peak ->
+            val cleanDbName = peak.name.replace(Regex("(?i)Mt\\.?|Mount"), "").trim()
+            cleanDbName.equals(cleanInputName, ignoreCase = true)
+        }
+
         if (name.isBlank() || elevInt == null) {
             errorMessage = "Please enter a valid Mountain Name and numerical Elevation in MASL."
+        } else if (isDuplicate) {
+            errorMessage = "\"${name.trim()}\" is already on PataGilid. Please check the name or try another peak."
         } else {
             isSubmitting = true
             errorMessage = null
@@ -129,28 +145,15 @@ fun AddCustomMountainScreen(
                         name = name.trim(),
                         description = description.trim(),
                         elevationMASL = elevInt,
+                        latitude = pinnedLocation?.latitude,
+                        longitude = pinnedLocation?.longitude,
                         region = region,
                         islandGroup = selectedIsland.displayName,
                         difficultyLevel = difficulty,
                         trailClass = trailClass
                     )
-                    if (selectedPhotoUri != null) {
-                        statusText = "Saving photo..."
-                        try {
-                            val asset = photoUploadService.resolveAssetFromUri(selectedPhotoUri!!)
-                            if (asset != null) {
-                                val uploadedUrls = photoUploadService.uploadPhotos(listOf(asset))
-                                val driveUrl = uploadedUrls.firstOrNull()
-                                if (driveUrl != null) {
-                                    userPhotoService.savePhoto(mountainId, driveUrl)
-                                }
-                            }
-                        } catch (photoEx: Exception) {
-                            Log.e("AddCustomMountain", "Cover photo upload failed: ${photoEx.localizedMessage}", photoEx)
-                        }
-                    }
                     isSubmitting = false
-                    onNavigateBack()
+                    onMountainAdded(mountainId)
                 } catch (e: Exception) {
                     isSubmitting = false
                     errorMessage = "Submission failed: ${e.localizedMessage}"
@@ -204,27 +207,8 @@ fun AddCustomMountainScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Next / Submit Button Capsule
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (isFormValid) Color(0xFF1A73E8) else Color(0xFFE5ECF4),
-                        modifier = Modifier
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .clickable(enabled = isFormValid) { submitAction() }
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(horizontal = 20.dp)
-                        ) {
-                            Text(
-                                text = "Next",
-                                color = if (isFormValid) Color.White else Color(0xFF9AA0A6),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    // Placeholder to maintain center alignment for title
+                    Box(modifier = Modifier.width(64.dp))
                 }
             }
         }
@@ -238,44 +222,57 @@ fun AddCustomMountainScreen(
             verticalArrangement = Arrangement.spacedBy(22.dp)
         ) {
             // Glider Blue Info Card ("Contributing to PataGilid List")
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Color(0xFFE8F0FE),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.Top
+            if (showInfoCard) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFFE8F0FE),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = Color(0xFF1A73E8),
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Contributing to PataGilid List",
-                            color = Color(0xFF1A1A1A),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Use this form to submit an unlisted mountain or trail to the national list. Your submission will be reviewed by administrators before becoming visible to all mountaineers.",
-                            color = Color(0xFF5F6368),
-                            fontSize = 13.5.sp,
-                            lineHeight = 19.sp
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.Top) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = Color(0xFF1A73E8),
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Contributing to PataGilid List",
+                                    color = Color(0xFF1A1A1A),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Submit an unlisted mountain. It will be reviewed by admins before becoming public.",
+                                    color = Color(0xFF5F6368),
+                                    fontSize = 13.5.sp,
+                                    lineHeight = 19.sp
+                                )
+                            }
+                        }
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color(0xFF5F6368),
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable { showInfoCard = false }
                         )
                     }
                 }
             }
 
-            // Section 1: Mountain Identification
+            // Section 1: Mountain Information
             Column {
                 Text(
-                    text = "Mountain Identification",
+                    text = "Mountain Information",
                     color = Color(0xFF70757A),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -287,6 +284,46 @@ fun AddCustomMountainScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column {
+                        // Pin Map Button
+                        Button(
+                            onClick = { showMapDialog = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 16.dp, bottom = if (pinnedLocation != null) 4.dp else 16.dp)
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF1A73E8),
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Map,
+                                contentDescription = "Pin Location on Map",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (pinnedLocation != null) "Edit Pinned Location" else "Pin Location on Map",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        
+                        if (pinnedLocation != null) {
+                            Text(
+                                text = String.format("Pinned: %.4f, %.4f", pinnedLocation!!.latitude, pinnedLocation!!.longitude),
+                                color = Color(0xFF5F6368),
+                                fontSize = 13.sp,
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 16.dp)
+                            )
+                        }
+                        
+                        HorizontalDivider(color = Color(0xFFEAEDF1), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                        
                         FormTextField(
                             value = name,
                             onValueChange = { name = it },
@@ -297,27 +334,14 @@ fun AddCustomMountainScreen(
                             value = elevation,
                             onValueChange = { elevation = it },
                             placeholder = "Elevation in MASL (e.g. 270)",
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            trailingIcon = if (isFetchingElevation) {
+                                { CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color(0xFF1A73E8)) }
+                            } else null
                         )
-                    }
-                }
-            }
+                        
+                        HorizontalDivider(color = Color(0xFFEAEDF1), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
 
-            // Section 2: Location
-            Column {
-                Text(
-                    text = "Location",
-                    color = Color(0xFF70757A),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-                )
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.White,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column {
                         // Segmented Control (Sliding Island Group Switcher)
                         Surface(
                             shape = RoundedCornerShape(14.dp),
@@ -392,10 +416,10 @@ fun AddCustomMountainScreen(
                 }
             }
 
-            // Section 3: Experienced Difficulty & Terrain
-            Column {
+            // Section 3: Difficulty & Terrain
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Text(
-                    text = "Experienced Difficulty & Terrain",
+                    text = "Difficulty & Terrain",
                     color = Color(0xFF70757A),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -505,135 +529,6 @@ fun AddCustomMountainScreen(
                     lineHeight = 17.sp,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
-            }
-
-            // Section 5: Personal Cover Photo (Optional)
-            Column {
-                Text(
-                    text = "Personal Cover Photo (Optional)",
-                    color = Color(0xFF70757A),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-                )
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.White,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (selectedPhotoUri == null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    photoPickerLauncher.launch(
-                                        PickVisualMediaRequest(
-                                            ActivityResultContracts.PickVisualMedia.ImageOnly
-                                        )
-                                    )
-                                }
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.AddPhotoAlternate,
-                                    contentDescription = null,
-                                    tint = Color(0xFF1A73E8),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = "Add Personal Cover Photo",
-                                    color = Color(0xFF1A1A1A),
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = Color(0xFF9AA0A6),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    } else {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Image(
-                                painter = rememberAsyncImagePainter(model = selectedPhotoUri),
-                                contentDescription = "Personal Cover Photo",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(180.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                TextButton(
-                                    onClick = {
-                                        photoPickerLauncher.launch(
-                                            PickVisualMediaRequest(
-                                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                                            )
-                                        )
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AddPhotoAlternate,
-                                        contentDescription = null,
-                                        tint = Color(0xFF1A73E8),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Change Photo", color = Color(0xFF1A73E8), fontWeight = FontWeight.SemiBold)
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                TextButton(
-                                    onClick = { selectedPhotoUri = null }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = null,
-                                        tint = Color(0xFFD32F2F),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Remove", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
-                                }
-                            }
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Set a custom cover image for this mountain. This photo is private and visible solely on your account.",
-                    color = Color(0xFF70757A),
-                    fontSize = 12.5.sp,
-                    lineHeight = 17.sp,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-            }
-
-            if (errorMessage != null) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFDEDED),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = errorMessage!!,
-                        color = Color(0xFFD32F2F),
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(12.dp)
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -862,6 +757,141 @@ fun AddCustomMountainScreen(
                 }
             }
         }
+
+        // Map Dialog
+        if (showMapDialog) {
+            MapCalibrationDialog(
+                onDismiss = { showMapDialog = false },
+                onLocationPinned = { loc, placeName ->
+                    pinnedLocation = loc
+                    showMapDialog = false
+                    
+                    if (!placeName.isNullOrBlank()) {
+                        name = placeName
+                    }
+                    
+                    // Reverse geocode
+                    coroutineScope.launch {
+                        val helper = RegionHelper
+                        try {
+                            val geocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
+                            val addresses = withContext(Dispatchers.IO) {
+                                geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+                            }
+                            
+                            if (!addresses.isNullOrEmpty()) {
+                                val address = addresses[0]
+                                val countryCode = address.countryCode
+                                
+                                if (countryCode?.lowercase() == "ph") {
+                                    val (newRegion, newIslandGroup) = helper.mapToInternalRegion(
+                                        address.adminArea ?: "", 
+                                        address.subAdminArea ?: "", 
+                                        address.locality ?: ""
+                                    )
+                                    
+                                    if (newRegion != null && newIslandGroup != null) {
+                                        selectedIsland = newIslandGroup
+                                        region = newRegion
+                                        
+                                        if (name.isBlank() && !address.featureName.isNullOrBlank() && !address.featureName.contains("+")) {
+                                            name = address.featureName
+                                        }
+                                        
+                                        // Fetch elevation
+                                        isFetchingElevation = true
+                                        try {
+                                            val elevStr = withContext(Dispatchers.IO) {
+                                                val apiKey = BuildConfig.GOOGLE_MAPS_API_KEY
+                                                val urlString = "https://maps.googleapis.com/maps/api/elevation/json?locations=${loc.latitude},${loc.longitude}&key=$apiKey"
+                                                val url = URL(urlString)
+                                                val connection = url.openConnection() as HttpURLConnection
+                                                connection.requestMethod = "GET"
+                                                connection.connect()
+                                                
+                                                if (connection.responseCode == 200) {
+                                                    val response = connection.inputStream.bufferedReader().use { it.readText() }
+                                                    val json = JSONObject(response)
+                                                    if (json.getString("status") == "OK") {
+                                                        val results = json.getJSONArray("results")
+                                                        if (results.length() > 0) {
+                                                            return@withContext results.getJSONObject(0).getDouble("elevation").toInt().toString()
+                                                        }
+                                                    }
+                                                }
+                                                null
+                                            }
+                                            if (elevStr != null && elevation.isBlank()) {
+                                                elevation = elevStr
+                                            }
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        } finally {
+                                            isFetchingElevation = false
+                                        }
+                                    } else {
+                                        pinnedLocation = null
+                                        showOutsidePHAlert = true
+                                    }
+                                } else {
+                                    pinnedLocation = null
+                                    showOutsidePHAlert = true
+                                }
+                            } else {
+                                pinnedLocation = null
+                                showOutsidePHAlert = true
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            pinnedLocation = null
+                            showOutsidePHAlert = true
+                        }
+                    }
+                },
+                initialLocation = pinnedLocation
+            )
+        }
+        
+        if (showOutsidePHAlert) {
+            AlertDialog(
+                onDismissRequest = { showOutsidePHAlert = false },
+                title = { Text("Invalid Location", fontWeight = FontWeight.Bold) },
+                text = { Text("The pinned location appears to be outside the Philippines or in an undefined area. Please pin a valid location on land within the country.") },
+                confirmButton = {
+                    TextButton(onClick = { showOutsidePHAlert = false }) {
+                        Text("OK", color = Color(0xFF1A73E8), fontWeight = FontWeight.Bold)
+                    }
+                }
+            )
+        }
+    }
+    
+    if (errorMessage != null) {
+        val isDuplicate = errorMessage!!.contains("already on PataGilid")
+        AlertDialog(
+            onDismissRequest = { errorMessage = null },
+            title = { 
+                Text(
+                    text = if (isDuplicate) "Teka, sandali!" else "Notice",
+                    color = Color(0xFF1A73E8),
+                    fontWeight = FontWeight.Bold
+                ) 
+            },
+            text = { 
+                Text(
+                    text = errorMessage!!,
+                    color = Color(0xFF1A1A1A),
+                    fontSize = 15.sp
+                ) 
+            },
+            confirmButton = {
+                TextButton(onClick = { errorMessage = null }) {
+                    Text("OK", color = Color(0xFF1A73E8), fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 }
 
@@ -873,16 +903,18 @@ private fun FormTextField(
     modifier: Modifier = Modifier,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     singleLine: Boolean = true,
-    minLines: Int = 1
+    minLines: Int = 1,
+    trailingIcon: @Composable (() -> Unit)? = null
 ) {
     TextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = Color(0xFF9AA0A6), fontSize = 15.sp) },
+        label = { Text(placeholder, color = Color(0xFF9AA0A6), fontSize = 13.sp) },
         textStyle = TextStyle(fontSize = 16.sp, color = Color(0xFF1A1A1A), fontWeight = FontWeight.Medium),
         singleLine = singleLine,
         minLines = minLines,
         keyboardOptions = keyboardOptions,
+        trailingIcon = trailingIcon,
         colors = TextFieldDefaults.colors(
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent,

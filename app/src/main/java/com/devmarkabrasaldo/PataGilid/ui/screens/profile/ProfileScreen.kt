@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -41,6 +42,7 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     onNavigateToDonation: () -> Unit,
     onNavigateToAdminQueue: () -> Unit,
+    onNavigateToContributions: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onSignOut: () -> Unit
 ) {
@@ -274,14 +276,14 @@ fun ProfileScreen(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("☕️", fontSize = 22.sp)
+                        Text("⛰️", fontSize = 22.sp)
                     }
 
                     Spacer(modifier = Modifier.width(14.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Buy Me a Coffee",
+                            "Pang akyat lang",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = PrimaryText
@@ -325,6 +327,34 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column {
+                    // My Contributions
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateToContributions() }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.List,
+                            contentDescription = null,
+                            tint = Color(0xFF007AFF), // iOS blue
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "My Contributions",
+                            fontSize = 15.sp,
+                            color = PrimaryText
+                        )
+                    }
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 46.dp),
+                        thickness = 0.5.dp,
+                        color = Color(0xFFE5E5EA)
+                    )
+
                     // Replay Onboarding Tour
                     Row(
                         modifier = Modifier

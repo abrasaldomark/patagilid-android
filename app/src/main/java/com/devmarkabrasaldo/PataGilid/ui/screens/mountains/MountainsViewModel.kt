@@ -39,6 +39,24 @@ class MountainsViewModel(private val repository: MountainRepository) : ViewModel
         unapproved.size + pendingGps.size
     }.stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
+    fun userPendingMountains(email: String): Flow<List<Mountain>> {
+        return allMountains.map { list ->
+            list.filter { !it.isPubliclyApproved && it.contributorEmail == email }
+        }
+    }
+
+    fun userPendingGps(email: String): Flow<List<Mountain>> {
+        return allMountains.map { list ->
+            list.filter { it.pendingContributorEmail == email }
+        }
+    }
+
+    fun userApprovedMountains(email: String): Flow<List<Mountain>> {
+        return allMountains.map { list ->
+            list.filter { it.isPubliclyApproved && it.contributorEmail == email }
+        }
+    }
+
     val availableRegions: StateFlow<List<String>> = combine(
         allMountains,
         selectedIslandGroup
