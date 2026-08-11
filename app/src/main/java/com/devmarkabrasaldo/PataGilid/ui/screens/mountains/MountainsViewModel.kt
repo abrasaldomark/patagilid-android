@@ -57,12 +57,12 @@ class MountainsViewModel(private val repository: MountainRepository) : ViewModel
         }
     }
 
-    val availableRegions: StateFlow<List<String>> = combine(
-        allMountains,
-        selectedIslandGroup
-    ) { list, island ->
-        val candidateMountains = if (island != null) list.filter { it.islandGroupEnum == island } else list
-        RegionHelper.sortRegions(candidateMountains.map { it.region })
+    val availableRegions: StateFlow<List<String>> = selectedIslandGroup.map { island ->
+        if (island != null) {
+            RegionHelper.canonicalRegionsByIslandGroup[island] ?: emptyList()
+        } else {
+            RegionHelper.allCanonicalRegions
+        }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val mountains: StateFlow<List<Mountain>> = combine(

@@ -86,8 +86,12 @@ fun ClimbsListScreen(
         isLoading = false
     }
 
-    val availableRegions = remember(mountainMap) {
-        RegionHelper.sortRegions(mountainMap.values.mapNotNull { it?.region })
+    val availableRegions = remember(selectedIsland) {
+        if (selectedIsland != null) {
+            RegionHelper.canonicalRegionsByIslandGroup[selectedIsland] ?: emptyList()
+        } else {
+            RegionHelper.allCanonicalRegions
+        }
     }
 
     val filteredLogs = remember(

@@ -553,7 +553,7 @@ fun AddCustomMountainScreen(
                 } else {
                     Icon(Icons.Default.Terrain, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Submit Mountain for Moderation", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Submit mountain for approval", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
 
