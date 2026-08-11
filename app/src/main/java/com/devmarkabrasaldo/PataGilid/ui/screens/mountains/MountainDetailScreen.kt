@@ -619,7 +619,7 @@ fun MountainDetailScreen(
                     Divider(color = Color.LightGray.copy(alpha = 0.5f))
                     
                     ListItem(
-                        headlineContent = { Text("Copy Coordinates to Clipboard", fontSize = 16.sp) },
+                        headlineContent = { Text("Copy Coordinates to Clipboard", fontSize = 16.sp, color = Color.Black) },
                         leadingContent = { Icon(Icons.Default.ContentCopy, contentDescription = null, tint = GliderBlue) },
                         modifier = Modifier.clickable {
                             val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -632,16 +632,26 @@ fun MountainDetailScreen(
                     )
                     
                     ListItem(
-                        headlineContent = { Text("View on Map", fontSize = 16.sp) },
+                        headlineContent = { Text("View on Map", fontSize = 16.sp, color = Color.Black) },
                         leadingContent = { Icon(Icons.Default.Map, contentDescription = null, tint = GliderBlue) },
                         modifier = Modifier.clickable {
                             val gmmIntentUri = Uri.parse("geo:${peak.latitude},${peak.longitude}?q=${peak.latitude},${peak.longitude}(${peak.name})")
                             val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, gmmIntentUri)
-                            if (mapIntent.resolveActivity(context.packageManager) != null) {
-                                context.startActivity(mapIntent)
-                            } else {
-                                val fallbackIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, gmmIntentUri)
-                                context.startActivity(fallbackIntent)
+                            try {
+                                if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                    context.startActivity(mapIntent)
+                                } else {
+                                    val fallbackIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, gmmIntentUri)
+                                    context.startActivity(fallbackIntent)
+                                }
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "No map application found. Opening browser.", android.widget.Toast.LENGTH_SHORT).show()
+                                val browserIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=${peak.latitude},${peak.longitude}"))
+                                try {
+                                    context.startActivity(browserIntent)
+                                } catch (e2: Exception) {
+                                    android.widget.Toast.makeText(context, "Unable to open map.", android.widget.Toast.LENGTH_SHORT).show()
+                                }
                             }
                             showCoordinatesBottomSheet = false
                         },
