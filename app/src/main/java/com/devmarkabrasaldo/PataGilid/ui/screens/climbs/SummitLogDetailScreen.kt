@@ -14,6 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -110,18 +112,21 @@ fun SummitLogDetailScreen(
     var log by remember { mutableStateOf<HikeLog?>(null) }
     var mountain by remember { mutableStateOf<Mountain?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var isShowingEditModal by remember { mutableStateOf(false) }
 
     val PageBackground = Color(0xFFF2F2F7) // iOS grouped list background
 
-    LaunchedEffect(logId) {
-        isLoading = true
-        val logs = container.mountainRepository.getUserHikeLogs()
-        val match = logs.find { it.id == logId }
-        log = match
-        if (match != null) {
-            mountain = container.mountainRepository.getMountain(match.mountainId)
+    LaunchedEffect(logId, isShowingEditModal) {
+        if (!isShowingEditModal) {
+            isLoading = true
+            val logs = container.mountainRepository.getUserHikeLogs()
+            val match = logs.find { it.id == logId }
+            log = match
+            if (match != null) {
+                mountain = container.mountainRepository.getMountain(match.mountainId)
+            }
+            isLoading = false
         }
-        isLoading = false
     }
 
     Scaffold(
@@ -150,7 +155,7 @@ fun SummitLogDetailScreen(
                         color = Color.White,
                         modifier = Modifier
                             .padding(end = 8.dp)
-                            .clickable { /* TODO Edit Action */ },
+                            .clickable { isShowingEditModal = true },
                         shadowElevation = 2.dp
                     ) {
                         Text(
@@ -419,6 +424,23 @@ fun SummitLogDetailScreen(
 
                 Spacer(modifier = Modifier.height(60.dp))
             }
+        }
+    }
+
+    if (isShowingEditModal && log != null) {
+        Dialog(
+            onDismissRequest = { isShowingEditModal = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            HikeLogCreationScreen(
+                mountainId = log!!.mountainId,
+                container = container,
+                onNavigateBack = { isShowingEditModal = false },
+                onLogSuccess = {
+                    isShowingEditModal = false
+                },
+                logToEdit = log
+            )
         }
     }
 }

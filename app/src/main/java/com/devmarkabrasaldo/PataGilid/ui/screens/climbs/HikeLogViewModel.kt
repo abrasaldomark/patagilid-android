@@ -34,10 +34,25 @@ class HikeLogViewModel(
     val uploadProgress = MutableStateFlow<String?>(null)
     val errorMessage = MutableStateFlow<String?>(null)
 
+    var editingLogId: String? = null
+    var existingPhotoUrls: List<String> = emptyList()
+
     init {
         viewModelScope.launch {
             mountain.value = mountainRepository.getMountain(mountainId)
         }
+    }
+
+    fun setupForEditing(log: HikeLog) {
+        editingLogId = log.id
+        trailName.value = log.trailName
+        didSummit.value = log.didSummit
+        routeType.value = log.routeType
+        exitTrailName.value = log.exitTrailName
+        waypoints.value = log.waypoints
+        startDate.value = log.dateTimeStart
+        endDate.value = log.dateTimeEnd
+        existingPhotoUrls = log.photoUrls
     }
 
     fun onPhotosSelected(uris: List<Uri>) {
@@ -106,12 +121,14 @@ class HikeLogViewModel(
                 }
 
                 uploadProgress.value = "Saving summit record to Cloud Firestore..."
+                val finalPhotoUrls = existingPhotoUrls + drivePhotoUrls
                 val log = HikeLog(
+                    id = editingLogId ?: java.util.UUID.randomUUID().toString(),
                     mountainId = mountainId,
                     dateTimeStart = startDate.value,
                     dateTimeEnd = endDate.value,
                     didSummit = didSummit.value,
-                    photoUrls = drivePhotoUrls,
+                    photoUrls = finalPhotoUrls,
                     trailName = trailName.value,
                     routeType = routeType.value,
                     exitTrailName = if (routeType.value == "Traverse") exitTrailName.value else "",

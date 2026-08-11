@@ -55,6 +55,7 @@ fun HikeLogCreationScreen(
     container: AppContainer,
     onNavigateBack: () -> Unit,
     onLogSuccess: () -> Unit,
+    logToEdit: com.devmarkabrasaldo.PataGilid.domain.models.HikeLog? = null,
     vm: HikeLogViewModel = viewModel(factory = HikeLogViewModel.Factory(container.mountainRepository, container.photoUploadService, mountainId))
 ) {
     val mountain by vm.mountain.collectAsState()
@@ -71,6 +72,12 @@ fun HikeLogCreationScreen(
     val errorMessage by vm.errorMessage.collectAsState()
     val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(logToEdit) {
+        logToEdit?.let {
+            vm.setupForEditing(it)
+        }
+    }
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
