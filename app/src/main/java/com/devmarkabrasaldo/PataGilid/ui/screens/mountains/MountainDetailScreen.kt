@@ -63,6 +63,7 @@ fun MountainDetailScreen(
 
     var showCalibrateDialog by remember { mutableStateOf(false) }
     var showMapDialog by remember { mutableStateOf(false) }
+    var showCoordinatesBottomSheet by remember { mutableStateOf(false) }
     var pinnedLocation by remember { mutableStateOf<LatLng?>(null) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -260,7 +261,7 @@ fun MountainDetailScreen(
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = LightCard,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clickable { showCoordinatesBottomSheet = true }
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -594,6 +595,60 @@ fun MountainDetailScreen(
                 onLocationPinned = { loc, _ -> pinnedLocation = loc },
                 initialLocation = pinnedLocation
             )
+        }
+        
+        if (showCoordinatesBottomSheet && peak.latitude != null && peak.longitude != null) {
+            val sheetState = rememberModalBottomSheetState()
+            ModalBottomSheet(
+                onDismissRequest = { showCoordinatesBottomSheet = false },
+                sheetState = sheetState,
+                containerColor = Color.White
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 32.dp)
+                ) {
+                    Text(
+                        text = "More Coordinate Options",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                        color = Color.Black
+                    )
+                    Divider(color = Color.LightGray.copy(alpha = 0.5f))
+                    
+                    ListItem(
+                        headlineContent = { Text("Copy Coordinates to Clipboard", fontSize = 16.sp) },
+                        leadingContent = { Icon(Icons.Default.ContentCopy, contentDescription = null, tint = GliderBlue) },
+                        modifier = Modifier.clickable {
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            val clip = android.content.ClipData.newPlainText("Coordinates", "${peak.latitude}, ${peak.longitude}")
+                            clipboard.setPrimaryClip(clip)
+                            android.widget.Toast.makeText(context, "Coordinates Copied!", android.widget.Toast.LENGTH_SHORT).show()
+                            showCoordinatesBottomSheet = false
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.White)
+                    )
+                    
+                    ListItem(
+                        headlineContent = { Text("View on Map", fontSize = 16.sp) },
+                        leadingContent = { Icon(Icons.Default.Map, contentDescription = null, tint = GliderBlue) },
+                        modifier = Modifier.clickable {
+                            val gmmIntentUri = Uri.parse("geo:${peak.latitude},${peak.longitude}?q=${peak.latitude},${peak.longitude}(${peak.name})")
+                            val mapIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, gmmIntentUri)
+                            if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                context.startActivity(mapIntent)
+                            } else {
+                                val fallbackIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, gmmIntentUri)
+                                context.startActivity(fallbackIntent)
+                            }
+                            showCoordinatesBottomSheet = false
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.White)
+                    )
+                }
+            }
         }
     }
 }
