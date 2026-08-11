@@ -4,8 +4,10 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -43,7 +45,7 @@ val SummitSteel = Color(0xFF6B7280)
 val DarkHero = Color(0xFF1F2937)
 val LightCard = Color(0xFFF3F4F6)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MountainDetailScreen(
     mountainId: String,
@@ -64,6 +66,7 @@ fun MountainDetailScreen(
     var showCalibrateDialog by remember { mutableStateOf(false) }
     var showMapDialog by remember { mutableStateOf(false) }
     var showCoordinatesBottomSheet by remember { mutableStateOf(false) }
+    var showInternalMap by remember { mutableStateOf(false) }
     var pinnedLocation by remember { mutableStateOf<LatLng?>(null) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -261,7 +264,10 @@ fun MountainDetailScreen(
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = LightCard,
-                    modifier = Modifier.fillMaxWidth().clickable { showCoordinatesBottomSheet = true }
+                    modifier = Modifier.fillMaxWidth().combinedClickable(
+                        onClick = { showInternalMap = true },
+                        onLongClick = { showCoordinatesBottomSheet = true }
+                    )
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -594,6 +600,14 @@ fun MountainDetailScreen(
                 onDismiss = { showMapDialog = false },
                 onLocationPinned = { loc, _ -> pinnedLocation = loc },
                 initialLocation = pinnedLocation
+            )
+        }
+        
+        if (showInternalMap) {
+            MountainMapView(
+                mountain = peak,
+                isAdmin = isAdmin,
+                onDismiss = { showInternalMap = false }
             )
         }
         

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Terrain
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,6 +63,7 @@ fun MountainMapView(
 
     var pinnedLocation by remember { mutableStateOf<LatLng?>(initialLocation) }
     var adjustedLocation by remember { mutableStateOf<LatLng?>(null) }
+    val coroutineScope = rememberCoroutineScope()
     
     val cameraPositionState = rememberCameraPositionState {
         this.position = CameraPosition.fromLatLngZoom(initialLocation, if (displayLat != null && displayLng != null) 13f else 6f)
@@ -102,50 +104,66 @@ fun MountainMapView(
             
             // Top UI Elements
             Column(modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 48.dp)) {
-                // Top Pill
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White.copy(alpha = 0.95f),
-                    shadowElevation = 8.dp,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                // Top Elements
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.White.copy(alpha = 0.95f),
+                        shadowElevation = 8.dp,
                     ) {
                         Text(
                             text = "Close",
                             color = LocalGliderBlue,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 17.sp,
-                            modifier = Modifier.clickable { onDismiss() }
+                            modifier = Modifier.clickable { onDismiss() }.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
-                        
-                        Text(
-                            text = if (isPending) "${mountain.name} (Prop..." else mountain.name,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp,
-                            color = Color.Black,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
-                        )
-                        
-                        if (displayLat != null && displayLng != null) {
+                    }
+                    
+                    Text(
+                        text = if (isPending) "${mountain.name} (Prop..." else mountain.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = Color.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = LocalTextStyle.current.copy(
+                            shadow = androidx.compose.ui.graphics.Shadow(
+                                color = Color.White,
+                                offset = androidx.compose.ui.geometry.Offset(0f, 0f),
+                                blurRadius = 8f
+                            )
+                        ),
+                        modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
+                    )
+                    
+                    if (displayLat != null && displayLng != null) {
+                        Surface(
+                            shape = CircleShape,
+                            shadowElevation = 8.dp,
+                            color = LocalGliderBlue
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .size(32.dp)
-                                    .background(LocalGliderBlue, CircleShape)
+                                    .size(40.dp)
                                     .clickable { 
                                         pinnedLocation = initialLocation
                                         adjustedLocation = null
+                                        coroutineScope.launch {
+                                            cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(initialLocation, 13f))
+                                        }
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Navigation, contentDescription = "Center", tint = Color.White, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Navigation, contentDescription = "Center", tint = Color.White, modifier = Modifier.size(20.dp))
                             }
                         }
+                    } else {
+                        Spacer(modifier = Modifier.width(40.dp))
                     }
                 }
                 
