@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Hiking
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Terrain
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -12,13 +13,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devmarkabrasaldo.PataGilid.di.AppContainer
 import com.devmarkabrasaldo.PataGilid.ui.screens.climbs.ClimbsListScreen
+import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListsScreen
+import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListsViewModel
 import com.devmarkabrasaldo.PataGilid.ui.screens.profile.ProfileScreen
 
 enum class MainTab(val title: String, val icon: ImageVector) {
     MOUNTAINS("Mountains", Icons.Default.Terrain),
     MY_CLIMBS("My Climbs", Icons.Default.Hiking),
+    MY_LISTS("My Lists", Icons.Default.Star),
     PROFILE("Profile", Icons.Default.Person)
 }
 
@@ -29,6 +34,7 @@ fun MainScreen(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToAddCustom: () -> Unit,
     onNavigateToHikeLogDetail: (String) -> Unit,
+    onNavigateToListDetail: (com.devmarkabrasaldo.PataGilid.domain.models.MountainList) -> Unit,
     onNavigateToDonation: () -> Unit,
     onNavigateToAdminQueue: () -> Unit,
     onNavigateToContributions: () -> Unit,
@@ -37,6 +43,10 @@ fun MainScreen(
     onSignOut: () -> Unit
 ) {
     var selectedTab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(MainTab.MOUNTAINS) }
+
+    val listsViewModel: MountainListsViewModel = viewModel(
+        factory = MountainListsViewModel.Factory(container.mountainListRepository)
+    )
 
     Scaffold(
         containerColor = Color.White,
@@ -89,6 +99,14 @@ fun MainScreen(
                     repository = container.mountainRepository,
                     modifier = padding,
                     onNavigateToDetail = onNavigateToHikeLogDetail
+                )
+                MainTab.MY_LISTS -> MountainListsScreen(
+                    viewModel = listsViewModel,
+                    onNavigateToDetail = { list ->
+                        // Navigate to list detail — handled via nav graph
+                        onNavigateToListDetail(list)
+                    },
+                    modifier = padding
                 )
                 MainTab.PROFILE -> ProfileScreen(
                     authRepository = container.authRepository,

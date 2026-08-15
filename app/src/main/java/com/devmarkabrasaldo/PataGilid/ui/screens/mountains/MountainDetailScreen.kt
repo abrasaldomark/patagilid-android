@@ -20,9 +20,12 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Terrain
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.animation.core.*
+import androidx.compose.animation.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import com.devmarkabrasaldo.PataGilid.ui.theme.GlobeLocationPin
 import com.devmarkabrasaldo.PataGilid.ui.theme.Elevation
@@ -39,6 +42,8 @@ import com.google.android.gms.maps.model.LatLng
 import coil.compose.AsyncImage
 import com.devmarkabrasaldo.PataGilid.di.AppContainer
 import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListsViewModel
 
 val GliderBlue = Color(0xFF3B82F6)
 val SummitSteel = Color(0xFF6B7280)
@@ -58,6 +63,21 @@ fun MountainDetailScreen(
     val mountainFlow = remember { container.mountainRepository.observeMountain(mountainId) }
     val mountain by mountainFlow.collectAsState(initial = null)
     val isAdmin = remember { container.authRepository.isAdmin }
+
+    // Lists ViewModel
+    val listsViewModel: MountainListsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = MountainListsViewModel.Factory(container.mountainListRepository)
+    )
+    val lists by listsViewModel.lists.collectAsStateWithLifecycle()
+    val isSaved = lists.any { it.mountainIds.contains(mountainId) }
+    var showSaveToListSheet by remember { mutableStateOf(false) }
+    
+    var displayIsSaved by remember { mutableStateOf(false) }
+    LaunchedEffect(isSaved, showSaveToListSheet) {
+        if (!showSaveToListSheet) {
+            displayIsSaved = isSaved
+        }
+    }
     
     val customPhotos by container.userMountainPhotoService.customPhotos.collectAsState()
     val personalPhotoUrl = customPhotos[mountainId]
@@ -111,6 +131,7 @@ fun MountainDetailScreen(
                     }
                 },
                 actions = {
+                    // Bookmark removed as requested
                     Surface(
                         shape = CircleShape,
                         color = Color.Transparent,
@@ -212,24 +233,49 @@ fun MountainDetailScreen(
                         }
                     }
 
-                    Column {
-                        Text(
-                            text = peak.name,
-                            color = Color.White,
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Elevation, contentDescription = null, tint = SummitSteel, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("${peak.elevationMASL} MASL", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Column {
+                            Text(
+                                text = peak.name,
+                                color = Color.White,
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Elevation, contentDescription = null, tint = SummitSteel, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("${peak.elevationMASL} MASL", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Place, contentDescription = null, tint = GliderBlue, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(peak.region, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Place, contentDescription = null, tint = GliderBlue, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(peak.region, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        
+                        val scale by animateFloatAsState(
+                            targetValue = if (displayIsSaved) 1.15f else 1.0f,
+                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                            label = "heartScale"
+                        )
+                        IconButton(
+                            onClick = { showSaveToListSheet = true },
+                            modifier = Modifier
+                                .offset(x = 8.dp, y = 8.dp)
+                                .scale(scale)
+                        ) {
+                            Icon(
+                                if (displayIsSaved) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Save to List",
+                                tint = if (displayIsSaved) Color.Red else Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
                     }
                 }
@@ -675,6 +721,17 @@ fun MountainDetailScreen(
             }
         }
     }
+
+    // Save to List bottom sheet
+    if (showSaveToListSheet) {
+        SaveToListBottomSheet(
+            mountainId = mountainId,
+            lists = lists,
+            onAdd = { listId -> listsViewModel.addMountain(listId, mountainId) },
+            onRemove = { listId -> listsViewModel.removeMountain(listId, mountainId) },
+            onDismiss = { showSaveToListSheet = false }
+        )
+    }
 }
 
 @Composable
@@ -693,6 +750,89 @@ fun SpecCard(modifier: Modifier = Modifier, title: String, value: String, icon: 
             Column {
                 Text(title, color = SummitSteel, fontSize = 12.sp)
                 Text(value, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SaveToListBottomSheet(
+    mountainId: String,
+    lists: List<com.devmarkabrasaldo.PataGilid.domain.models.MountainList>,
+    onAdd: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp)
+        ) {
+            // Handle
+            Text(
+                "Save to List",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            )
+
+            Divider(color = Color(0xFFE0E0E0), thickness = 0.5.dp)
+
+            if (lists.isEmpty()) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("🏔️", fontSize = 36.sp)
+                        Text("No lists yet", fontWeight = FontWeight.SemiBold)
+                        Text("Go to My Lists tab to create one.", fontSize = 13.sp, color = Color(0xFF5F6368))
+                    }
+                }
+            } else {
+                lists.forEach { list ->
+                    val isInList = list.mountainIds.contains(mountainId)
+                    ListItem(
+                        headlineContent = { Text(list.name, fontWeight = FontWeight.Medium) },
+                        supportingContent = {
+                            Text(
+                                if (list.mountainCount == 1) "1 mountain" else "${list.mountainCount} mountains",
+                                fontSize = 12.sp
+                            )
+                        },
+                        leadingContent = {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(GliderBlue.copy(alpha = 0.10f)),
+                                contentAlignment = Alignment.Center
+                            ) { Text(list.emoji, fontSize = 20.sp) }
+                        },
+                        trailingContent = {
+                            Icon(
+                                if (isInList) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = if (isInList) GliderBlue else Color(0xFF9AA0A6)
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            if (isInList) onRemove(list.id) else onAdd(list.id)
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.White)
+                    )
+                    Divider(color = Color(0xFFF1F3F4), thickness = 0.5.dp, modifier = Modifier.padding(start = 72.dp))
+                }
             }
         }
     }

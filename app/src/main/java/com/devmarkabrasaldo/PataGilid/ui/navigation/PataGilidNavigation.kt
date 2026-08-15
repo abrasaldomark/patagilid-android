@@ -20,6 +20,9 @@ import com.devmarkabrasaldo.PataGilid.ui.screens.mountains.MainScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.mountains.MountainDetailScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.profile.AdminModerationQueueScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.profile.DonationQRScreen
+import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListDetailScreen
+import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListsViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 object Screen {
     const val ONBOARDING = "onboarding"
@@ -35,9 +38,12 @@ object Screen {
     const val USER_CONTRIBUTIONS = "user_contributions"
     const val SPONSORS = "sponsors"
 
+    const val MOUNTAIN_LIST_DETAIL = "mountain_list_detail/{listId}"
+
     fun mountainDetail(mountainId: String) = "mountain_detail/$mountainId"
     fun hikeLogCreation(mountainId: String) = "hike_log_creation/$mountainId"
     fun summitLogDetail(logId: String) = "summit_log_detail/$logId"
+    fun mountainListDetail(listId: String) = "mountain_list_detail/$listId"
     fun photoGallery(startIndex: Int, urls: List<String>): String {
         val encodedUrls = java.net.URLEncoder.encode(urls.joinToString("||"), "UTF-8")
         return "photo_gallery/$startIndex?urls=$encodedUrls"
@@ -48,6 +54,10 @@ object Screen {
 fun PataGilidNavigation(container: AppContainer) {
     val navController = rememberNavController()
     val currentUser by container.authRepository.currentUser.collectAsState()
+
+    val listsViewModel: MountainListsViewModel = viewModel(
+        factory = MountainListsViewModel.Factory(container.mountainListRepository)
+    )
     
     val context = androidx.compose.ui.platform.LocalContext.current
     val sharedPrefs = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
@@ -92,6 +102,7 @@ fun PataGilidNavigation(container: AppContainer) {
                 onNavigateToDetail = { id -> navController.navigate(Screen.mountainDetail(id)) },
                 onNavigateToAddCustom = { navController.navigate(Screen.ADD_CUSTOM_MOUNTAIN) },
                 onNavigateToHikeLogDetail = { logId -> navController.navigate(Screen.summitLogDetail(logId)) },
+                onNavigateToListDetail = { list -> navController.navigate(Screen.mountainListDetail(list.id)) },
                 onNavigateToDonation = { navController.navigate(Screen.DONATION_QR) },
                 onNavigateToAdminQueue = { navController.navigate(Screen.ADMIN_MODERATION) },
                 onNavigateToContributions = { navController.navigate(Screen.USER_CONTRIBUTIONS) },
@@ -197,5 +208,24 @@ fun PataGilidNavigation(container: AppContainer) {
                 onNavigateToDetail = { id -> navController.navigate(Screen.mountainDetail(id)) }
             )
         }
+
+        composable(
+            route = Screen.MOUNTAIN_LIST_DETAIL,
+            arguments = listOf(navArgument("listId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val listId = backStackEntry.arguments?.getString("listId") ?: ""
+            val lists by listsViewModel.lists.collectAsState()
+            val list = lists.firstOrNull { it.id == listId }
+            if (list != null) {
+                MountainListDetailScreen(
+                    list = list,
+                    mountainRepository = container.mountainRepository,
+                    viewModel = listsViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToMountainDetail = { mountainId -> navController.navigate(Screen.mountainDetail(mountainId)) }
+                )
+            }
+        }
     }
 }
+

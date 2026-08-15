@@ -6,12 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
+import com.devmarkabrasaldo.PataGilid.domain.models.MountainList
 
-@Database(entities = [Mountain::class], version = 1, exportSchema = false)
+@Database(entities = [Mountain::class, MountainList::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class PataGilidDatabase : RoomDatabase() {
 
     abstract fun mountainDao(): MountainDao
+    abstract fun mountainListDao(): MountainListDao
 
     companion object {
         @Volatile
