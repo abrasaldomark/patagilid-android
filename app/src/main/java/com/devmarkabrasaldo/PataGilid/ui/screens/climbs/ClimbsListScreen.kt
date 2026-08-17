@@ -396,7 +396,9 @@ fun HikeLogRow(log: HikeLog, mountain: Mountain?, onClick: () -> Unit) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = Color(0xFFF1F3F4),
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier
+                    .size(56.dp)
+                    .align(Alignment.CenterVertically)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
@@ -479,24 +481,37 @@ fun HikeLogRow(log: HikeLog, mountain: Mountain?, onClick: () -> Unit) {
                         } else {
                             "${log.trailName} (Back Trail)"
                         }
+                        
+                        val tintColor = when (log.routeType) {
+                            "Circuit" -> Color(0xFFFF9500) // iOS Orange
+                            "Traverse" -> Color(0xFFAF52DE) // iOS Purple
+                            else -> Color(0xFF3A82F5) // gliderBlue / iOS Blue
+                        }
+                        
+                        val iconVector = when (log.routeType) {
+                            "Circuit" -> Icons.Default.Loop
+                            "Traverse" -> Icons.Default.Route
+                            else -> Icons.Default.SwapVert
+                        }
+
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFE8F0FE)
+                            shape = CircleShape,
+                            color = tintColor.copy(alpha = 0.1f)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Timeline,
+                                    imageVector = iconVector,
                                     contentDescription = null,
-                                    tint = Color(0xFF1A73E8),
-                                    modifier = Modifier.size(14.dp)
+                                    tint = tintColor,
+                                    modifier = Modifier.size(12.dp)
                                 )
-                                Spacer(modifier = Modifier.width(5.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = trailText,
-                                    color = Color(0xFF1A73E8),
+                                    color = tintColor,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
@@ -506,13 +521,20 @@ fun HikeLogRow(log: HikeLog, mountain: Mountain?, onClick: () -> Unit) {
                         }
                     }
 
-                    // Summited / Backed Out status
-                    Text(
-                        text = if (log.didSummit) "Summited" else "Backed Out",
-                        color = if (log.didSummit) Color(0xFF1A73E8) else Color(0xFFD93025), // Blue for Summited, Red for Backed Out
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    // Summited / Backed Out status badge
+                    Surface(
+                        shape = CircleShape, // Equivalent to iOS Capsule()
+                        color = if (log.didSummit) Color(0xFF3A82F5).copy(alpha = 0.1f) else Color(0xFFFF3B30).copy(alpha = 0.08f)
+                    ) {
+                        Text(
+                            text = if (log.didSummit) "Summited" else "Backed Out",
+                            color = if (log.didSummit) Color(0xFF3A82F5) else Color(0xFFFF3B30),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.5.sp, // Match tracking(0.5)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
                 }
             }
 
