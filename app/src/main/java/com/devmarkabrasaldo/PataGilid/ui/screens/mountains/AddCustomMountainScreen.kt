@@ -855,6 +855,9 @@ fun AddCustomMountainScreen(
         if (showOutsidePHAlert) {
             AlertDialog(
                 onDismissRequest = { showOutsidePHAlert = false },
+                containerColor = Color.White,
+                titleContentColor = Color.Black,
+                textContentColor = Color(0xFF202124),
                 title = { Text("Invalid Location", fontWeight = FontWeight.Bold) },
                 text = { Text("The pinned location appears to be outside the Philippines or in an undefined area. Please pin a valid location on land within the country.") },
                 confirmButton = {
@@ -870,6 +873,9 @@ fun AddCustomMountainScreen(
         val isDuplicate = errorMessage!!.contains("already on PataGilid")
         AlertDialog(
             onDismissRequest = { errorMessage = null },
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            textContentColor = Color(0xFF202124),
             title = { 
                 Text(
                     text = if (isDuplicate) "Teka, sandali!" else "Notice",
@@ -889,7 +895,6 @@ fun AddCustomMountainScreen(
                     Text("OK", color = Color(0xFF1A73E8), fontWeight = FontWeight.Bold)
                 }
             },
-            containerColor = Color.White,
             shape = RoundedCornerShape(16.dp)
         )
     }

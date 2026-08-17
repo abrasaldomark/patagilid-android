@@ -224,6 +224,9 @@ fun MountainListsScreen(
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            textContentColor = Color(0xFF202124),
             title = { Text("Delete \"${target.name}\"?") },
             text = { Text("This will permanently remove the list and all ${target.mountainCount} saved mountains from it. Your actual climb logs are unaffected.") },
             confirmButton = {

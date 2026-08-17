@@ -370,6 +370,9 @@ private fun ListMountainCard(
     if (showConfirm) {
         AlertDialog(
             onDismissRequest = { showConfirm = false },
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            textContentColor = Color(0xFF202124),
             title = { Text("Remove from list?") },
             text = { Text("${mountain.name} will be removed from this list. Your climb logs are not affected.") },
             confirmButton = {
