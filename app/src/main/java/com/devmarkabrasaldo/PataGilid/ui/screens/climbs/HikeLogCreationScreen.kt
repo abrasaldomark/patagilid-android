@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -66,6 +68,7 @@ fun HikeLogCreationScreen(
     val activeRouteBg = Color(0xFFEFF6FF)
     val exitTrailName by vm.exitTrailName.collectAsState()
     val waypoints by vm.waypoints.collectAsState()
+    val climbNotes by vm.climbNotes.collectAsState()
     val selectedAssets by vm.selectedAssets.collectAsState()
     val isSubmitting by vm.isSubmitting.collectAsState()
     val uploadProgress by vm.uploadProgress.collectAsState()
@@ -173,9 +176,9 @@ fun HikeLogCreationScreen(
                 }
             }
 
-            // Climb Info
+            // Climb Duration
             Column {
-                Text("Climb Info", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text("Climb Duration", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -208,57 +211,6 @@ fun HikeLogCreationScreen(
                                 }
                                 Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFFF3F4F6)) {
                                     Text(endTimeStr, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = Color.Black, fontSize = 14.sp)
-                                }
-                            }
-                        }
-                        
-                        Divider(color = Color(0xFFF3F4F6), modifier = Modifier.padding(vertical = 16.dp))
-                        
-                        Text("Climb Outcome", color = Color(0xFF9CA3AF), fontSize = 13.sp)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            // Summited Button
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (didSummit) activeRouteBg else Color(0xFFF9FAFB),
-                                border = BorderStroke(2.dp, if (didSummit) activeRouteColor else Color.Transparent),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(90.dp)
-                                    .clickable { vm.didSummit.value = true }
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Icon(Icons.Default.Terrain, contentDescription = null, tint = if (didSummit) activeRouteColor else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Summited", color = if (didSummit) activeRouteColor else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("Reached Top", color = if (didSummit) Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 11.sp)
-                                }
-                            }
-                            
-                            // DNF Button
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (!didSummit) activeRouteBg else Color(0xFFF9FAFB),
-                                border = BorderStroke(2.dp, if (!didSummit) activeRouteColor else Color.Transparent),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(90.dp)
-                                    .clickable { vm.didSummit.value = false }
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Icon(Icons.Default.Undo, contentDescription = null, tint = if (!didSummit) activeRouteColor else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text("Backed Out (DNF)", color = if (!didSummit) activeRouteColor else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("Did Not Finish", color = if (!didSummit) Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 11.sp)
                                 }
                             }
                         }
@@ -486,6 +438,137 @@ fun HikeLogCreationScreen(
                                 Text(mountain?.trailClass ?: "N/A", color = Color.Black, fontSize = 16.sp)
                             }
                         }
+                    }
+                }
+            }
+
+            // Climb Outcome
+            Column {
+                Text("Climb Outcome", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFF3F4F6)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            // Summited Button
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (didSummit) activeRouteBg else Color(0xFFF9FAFB),
+                                border = BorderStroke(2.dp, if (didSummit) activeRouteColor else Color.Transparent),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(90.dp)
+                                    .clickable { vm.didSummit.value = true }
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(Icons.Default.Terrain, contentDescription = null, tint = if (didSummit) activeRouteColor else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Summited", color = if (didSummit) activeRouteColor else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("Reached Top", color = if (didSummit) Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 11.sp)
+                                }
+                            }
+                            
+                            // DNF Button
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (!didSummit) activeRouteBg else Color(0xFFF9FAFB),
+                                border = BorderStroke(2.dp, if (!didSummit) activeRouteColor else Color.Transparent),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(90.dp)
+                                    .clickable { vm.didSummit.value = false }
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(Icons.Default.Undo, contentDescription = null, tint = if (!didSummit) activeRouteColor else Color(0xFF9CA3AF), modifier = Modifier.size(28.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Backed Out (DNF)", color = if (!didSummit) activeRouteColor else Color(0xFF9CA3AF), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("Did Not Finish", color = if (!didSummit) Color(0xFF9CA3AF) else Color(0xFFD1D5DB), fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Climb Notes
+            Column {
+                Text("Climb Notes", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF9FAFB),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        if (!didSummit) {
+                            Text("Why did you back out? (Optional)", color = Color(0xFF9CA3AF), fontSize = 13.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                val chips = listOf("⛈️ Bad Weather", "🤕 Injury / Sickness", "⏰ Time Constraint", "🥾 Trail Conditions", "🛑 Group / Safety Call")
+                                items(chips) { chip ->
+                                    Surface(
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = Color(0xFFE5E7EB),
+                                        modifier = Modifier.clickable {
+                                            val currentText = vm.climbNotes.value
+                                            if (currentText.isNotEmpty()) {
+                                                vm.climbNotes.value = currentText + "\n" + chip
+                                            } else {
+                                                vm.climbNotes.value = chip
+                                            }
+                                        }
+                                    ) {
+                                        Text(
+                                            text = chip,
+                                            fontSize = 12.sp,
+                                            color = Color.Black,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                        
+                        OutlinedTextField(
+                            value = climbNotes,
+                            onValueChange = { vm.climbNotes.value = it },
+                            placeholder = { 
+                                Text(
+                                    if (didSummit) "Journal your climb experience... (Optional)" else "Additional notes about the climb... (Optional)", 
+                                    color = Color(0xFFD1D5DB), 
+                                    fontSize = 15.sp
+                                ) 
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 100.dp),
+                            textStyle = TextStyle(color = Color.Black, fontSize = 15.sp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFFE5E7EB),
+                                unfocusedBorderColor = Color(0xFFE5E7EB),
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        )
                     }
                 }
             }

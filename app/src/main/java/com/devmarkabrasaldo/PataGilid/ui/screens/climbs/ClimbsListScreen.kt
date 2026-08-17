@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.text.input.ImeAction
@@ -33,8 +35,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import com.devmarkabrasaldo.PataGilid.R
 import com.devmarkabrasaldo.PataGilid.data.repository.MountainRepository
 import com.devmarkabrasaldo.PataGilid.domain.models.HikeLog
+import com.devmarkabrasaldo.PataGilid.ui.components.*
 import com.devmarkabrasaldo.PataGilid.domain.models.IslandGroup
 import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
+import kotlinx.coroutines.flow.combine
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import com.devmarkabrasaldo.PataGilid.domain.models.RegionHelper
 import java.text.SimpleDateFormat
 import java.util.*
@@ -57,14 +63,19 @@ enum class LogOutcomeFilter(val label: String) {
 fun ClimbsListScreen(
     repository: MountainRepository,
     modifier: Modifier = Modifier,
-    onNavigateToDetail: (String) -> Unit
+    onNavigateToDetail: (String) -> Unit,
+    vm: ClimbsListViewModel = viewModel(factory = ClimbsListViewModel.Factory(repository))
 ) {
-    var hikeLogs by remember { mutableStateOf<List<HikeLog>>(emptyList()) }
-    var mountainMap by remember { mutableStateOf<Map<String, Mountain?>>(emptyMap()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val hikeLogs by vm.hikeLogs.collectAsState()
+    val mountainMap by vm.mountainMap.collectAsState()
+    
+    // Check if initial load is still happening (both empty)
+    val isLoading = hikeLogs.isEmpty() && mountainMap.isEmpty()
+    var showLoadingUI by remember { mutableStateOf(false) }
 
     var searchText by remember { mutableStateOf("") }
     var isSearchVisible by remember { mutableStateOf(false) }
+    val searchFocusRequester = remember { FocusRequester() }
     var sortOrder by remember { mutableStateOf(LogSortOrder.MOST_RECENT) }
     var selectedOutcome by remember { mutableStateOf(LogOutcomeFilter.ALL) }
     var selectedRegion by remember { mutableStateOf<String?>(null) }
@@ -72,18 +83,13 @@ fun ClimbsListScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
-    LaunchedEffect(Unit) {
-        isLoading = true
-        val logs = repository.getUserHikeLogs()
-        val map = mutableMapOf<String, Mountain?>()
-        for (log in logs) {
-            if (!map.containsKey(log.mountainId)) {
-                map[log.mountainId] = repository.getMountain(log.mountainId)
-            }
+    LaunchedEffect(isLoading) {
+        if (isLoading) {
+            kotlinx.coroutines.delay(400)
+            if (isLoading) showLoadingUI = true
+        } else {
+            showLoadingUI = false
         }
-        hikeLogs = logs
-        mountainMap = map
-        isLoading = false
     }
 
     val availableRegions = remember(selectedIsland) {
@@ -131,235 +137,71 @@ fun ClimbsListScreen(
                     focusManager.clearFocus()
                 })
             },
-        containerColor = Color(0xFFF5F6F8),
+        containerColor = Color.White,
         topBar = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White)
+                    .padding(top = 8.dp)
             ) {
                 // Upper right floating search & filter buttons in white capsule
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    if (hikeLogs.isNotEmpty()) {
-                        Surface(
-                            shape = RoundedCornerShape(24.dp),
-                            color = Color.White,
-                            shadowElevation = 6.dp
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                // Search Toggle Button
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color(0xFF1A73E8),
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clickable { isSearchVisible = !isSearchVisible }
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.Search,
-                                            contentDescription = "Search",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                FloatingSearchFilterToolbar(
+                    isSearchVisible = isSearchVisible,
+                    onToggleSearch = { isSearchVisible = !isSearchVisible },
+                    isMenuExpanded = menuExpanded,
+                    onToggleMenu = { menuExpanded = it },
+                    menuContent = {
+                        SortOrderMenuSection(
+                            items = LogSortOrder.entries.map { order ->
+                                SortMenuItem(
+                                    label = order.label,
+                                    isSelected = sortOrder == order,
+                                    onClick = {
+                                        sortOrder = order
+                                        menuExpanded = false
                                     }
-                                }
-
-                                // Sort & Filter Dropdown Trigger Button
-                                Box {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = Color(0xFF1A73E8),
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clickable { menuExpanded = true }
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.Default.FilterList,
-                                                contentDescription = "Filter and Sort Menu",
-                                                tint = Color.White,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-                                    }
-
-                                    DropdownMenu(
-                                        expanded = menuExpanded,
-                                        onDismissRequest = { menuExpanded = false },
-                                        modifier = Modifier.background(Color.White),
-                                        shape = RoundedCornerShape(16.dp),
-                                        shadowElevation = 8.dp
-                                    ) {
-                                        // Sort Order
-                                        Text(
-                                            text = "Sort Order",
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF5F6368)
-                                        )
-                                        LogSortOrder.entries.forEach { order ->
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Text(
-                                                        text = order.label,
-                                                        color = Color(0xFF202124),
-                                                        fontSize = 15.sp,
-                                                        fontWeight = if (sortOrder == order) FontWeight.SemiBold else FontWeight.Normal
-                                                    )
-                                                },
-                                                leadingIcon = {
-                                                    if (sortOrder == order) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Check,
-                                                            contentDescription = null,
-                                                            tint = Color(0xFF1A73E8),
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    } else {
-                                                        Spacer(modifier = Modifier.size(20.dp))
-                                                    }
-                                                },
-                                                onClick = {
-                                                    sortOrder = order
-                                                    menuExpanded = false
-                                                },
-                                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-                                            )
-                                        }
-
-                                        HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp), color = Color(0xFFE8EAED))
-
-                                        // Filter by Outcome
-                                        Text(
-                                            text = "Filter by Outcome",
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF5F6368)
-                                        )
-                                        LogOutcomeFilter.entries.forEach { outcome ->
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Text(
-                                                        text = outcome.label,
-                                                        color = Color(0xFF202124),
-                                                        fontSize = 15.sp,
-                                                        fontWeight = if (selectedOutcome == outcome) FontWeight.SemiBold else FontWeight.Normal
-                                                    )
-                                                },
-                                                leadingIcon = {
-                                                    if (selectedOutcome == outcome) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Check,
-                                                            contentDescription = null,
-                                                            tint = Color(0xFF1A73E8),
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    } else {
-                                                        Spacer(modifier = Modifier.size(20.dp))
-                                                    }
-                                                },
-                                                onClick = {
-                                                    selectedOutcome = outcome
-                                                    menuExpanded = false
-                                                },
-                                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-                                            )
-                                        }
-
-                                        HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp), color = Color(0xFFE8EAED))
-
-                                        // Filter by Region
-                                        Text(
-                                            text = "Filter by Region",
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF5F6368)
-                                        )
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    text = "All Regions",
-                                                    color = Color(0xFF202124),
-                                                    fontSize = 15.sp,
-                                                    fontWeight = if (selectedRegion == null) FontWeight.SemiBold else FontWeight.Normal
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                if (selectedRegion == null) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Check,
-                                                        contentDescription = null,
-                                                        tint = Color(0xFF1A73E8),
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                } else {
-                                                    Spacer(modifier = Modifier.size(20.dp))
-                                                }
-                                            },
-                                            onClick = {
-                                                selectedRegion = null
-                                                menuExpanded = false
-                                            },
-                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-                                        )
-
-                                        availableRegions.forEach { region ->
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Text(
-                                                        text = region,
-                                                        color = Color(0xFF202124),
-                                                        fontSize = 15.sp,
-                                                        fontWeight = if (selectedRegion == region) FontWeight.SemiBold else FontWeight.Normal
-                                                    )
-                                                },
-                                                leadingIcon = {
-                                                    if (selectedRegion == region) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Check,
-                                                            contentDescription = null,
-                                                            tint = Color(0xFF1A73E8),
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    } else {
-                                                        Spacer(modifier = Modifier.size(20.dp))
-                                                    }
-                                                },
-                                                onClick = {
-                                                    selectedRegion = region
-                                                    selectedIsland = null
-                                                    menuExpanded = false
-                                                },
-                                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-                                            )
-                                        }
-                                    }
-                                }
+                                )
                             }
-                        }
+                        )
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp), color = Color(0xFFE8EAED))
+
+                        CustomFilterMenuSection(
+                            title = "Filter by Outcome",
+                            items = LogOutcomeFilter.entries.map { outcome ->
+                                SortMenuItem(
+                                    label = outcome.label,
+                                    isSelected = selectedOutcome == outcome,
+                                    onClick = {
+                                        selectedOutcome = outcome
+                                        menuExpanded = false
+                                    }
+                                )
+                            }
+                        )
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp), color = Color(0xFFE8EAED))
+
+                        RegionFilterMenuSection(
+                            availableRegions = availableRegions,
+                            selectedRegion = selectedRegion,
+                            onSelectRegion = {
+                                selectedRegion = it
+                                selectedIsland = null
+                                menuExpanded = false
+                            }
+                        )
                     }
-                }
+                )
 
                 // Large Title
                 Text(
-                    text = "My Summit Logs",
-                    fontSize = 34.sp,
+                    text = "Climbs",
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF202124),
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
 
                 // Animated Search Field
@@ -369,7 +211,8 @@ fun ClimbsListScreen(
                         onValueChange = { searchText = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .focusRequester(searchFocusRequester),
                         placeholder = { Text("Search Mountain, Region, or Trail...", color = Color(0xFF5F6368)) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF5F6368)) },
                         trailingIcon = {
@@ -390,7 +233,46 @@ fun ClimbsListScreen(
                         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                         singleLine = true
                     )
+                    LaunchedEffect(Unit) {
+                        searchFocusRequester.requestFocus()
+                    }
                 }
+
+                IslandGroupFilterBar(
+                    allCount = hikeLogs.size,
+                    isAllSelected = selectedIsland == null && selectedRegion == null && selectedOutcome == LogOutcomeFilter.ALL,
+                    selectedIslandGroup = selectedIsland,
+                    onResetFilters = {
+                        selectedIsland = null
+                        selectedRegion = null
+                        selectedOutcome = LogOutcomeFilter.ALL
+                    },
+                    onSelectIslandGroup = { island ->
+                        selectedIsland = island
+                        if (island != null) selectedRegion = null
+                    },
+                    extraBadges = {
+                        if (selectedOutcome != LogOutcomeFilter.ALL) {
+                            DismissableBadge(
+                                text = if (selectedOutcome == LogOutcomeFilter.SUMMITED) "Summited Only" else "Backed Out",
+                                onDismiss = { selectedOutcome = LogOutcomeFilter.ALL }
+                            )
+                        }
+                        if (selectedRegion != null) {
+                            DismissableBadge(
+                                text = selectedRegion!!,
+                                onDismiss = { selectedRegion = null }
+                            )
+                        }
+                    }
+                )
+    
+                CountBanner(
+                    filteredCount = filteredLogs.size,
+                    totalCount = hikeLogs.size,
+                    noun = "Climbs",
+                    showDivider = true
+                )
             }
         }
     ) { padding ->
@@ -398,130 +280,13 @@ fun ClimbsListScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(Color(0xFFF5F6F8))
+                .background(Color.White)
         ) {
-            if (hikeLogs.isNotEmpty()) {
-                // Horizontal Island & Active Badges Filter Bar
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFF1F3F4))
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // All (Count)
-                    FilterPill(
-                        text = "All (${hikeLogs.size})",
-                        iconResId = R.drawable.philippines_icon,
-                        isSelected = selectedIsland == null && selectedRegion == null && selectedOutcome == LogOutcomeFilter.ALL,
-                        onClick = {
-                            selectedIsland = null
-                            selectedRegion = null
-                            selectedOutcome = LogOutcomeFilter.ALL
-                        }
-                    )
-    
-                    // Island Groups
-                    IslandGroup.entries.forEach { island ->
-                        val iconRes = when (island) {
-                            IslandGroup.LUZON -> R.drawable.luzon_icon
-                            IslandGroup.VISAYAS -> R.drawable.visayas_icon
-                            IslandGroup.MINDANAO -> R.drawable.mindanao_icon
-                        }
-                        FilterPill(
-                            text = island.displayName,
-                            iconResId = iconRes,
-                            isSelected = selectedIsland == island,
-                            onClick = {
-                                selectedIsland = if (selectedIsland == island) null else island
-                                if (selectedIsland != null) selectedRegion = null
-                            }
-                        )
-                    }
-    
-                    // Active Outcome Badge indicator (Glider Blue scheme)
-                    if (selectedOutcome != LogOutcomeFilter.ALL) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFF1A73E8),
-                            modifier = Modifier.clickable { selectedOutcome = LogOutcomeFilter.ALL }
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = if (selectedOutcome == LogOutcomeFilter.SUMMITED) "Summited Only" else "Backed Out",
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Cancel,
-                                    contentDescription = "Clear Outcome Filter",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-    
-                    // Active Region Badge indicator (Glider Blue scheme)
-                    if (selectedRegion != null) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFF1A73E8),
-                            modifier = Modifier.clickable { selectedRegion = null }
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = selectedRegion!!,
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = Icons.Default.Cancel,
-                                    contentDescription = "Clear Region Filter",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-    
-                // Showing X of Y Climbs Subtitle & Divider
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Showing ${filteredLogs.size} of ${hikeLogs.size} Climbs",
-                        color = Color(0xFF80868B),
-                        fontSize = 13.sp
-                    )
-                }
-                HorizontalDivider(color = Color(0xFFE8EAED), thickness = 1.dp)
-            }
-
-            // Content Body
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF1A73E8))
+                if (showLoadingUI) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFF1A73E8))
+                    }
                 }
             } else if (filteredLogs.isEmpty()) {
                 val isTrulyEmpty = searchText.isBlank() && selectedIsland == null && selectedRegion == null && selectedOutcome == LogOutcomeFilter.ALL
@@ -589,13 +354,11 @@ fun ClimbsListScreen(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     items(filteredLogs, key = { it.id ?: UUID.randomUUID().toString() }) { log ->
                         val mountain = mountainMap[log.mountainId]
-                        HikeLogCard(log = log, mountain = mountain, onClick = {
+                        HikeLogRow(log = log, mountain = mountain, onClick = {
                             log.id?.let { onNavigateToDetail(it) }
                         })
                     }
@@ -605,184 +368,150 @@ fun ClimbsListScreen(
     }
 }
 
-@Composable
-private fun FilterPill(
-    text: String,
-    iconResId: Int? = null,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        shape = CircleShape,
-        color = if (isSelected) Color(0xFF1A73E8) else Color(0xFFE8EAED),
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-        ) {
-            if (iconResId != null) {
-                Icon(
-                    painter = painterResource(id = iconResId),
-                    contentDescription = null,
-                    tint = if (isSelected) Color.White else Color(0xFF3C4043),
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-            }
-            Text(
-                text = text,
-                color = if (isSelected) Color.White else Color(0xFF3C4043),
-                fontSize = 14.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-            )
-        }
-    }
-}
+
 
 @Composable
-fun HikeLogCard(log: HikeLog, mountain: Mountain?, onClick: () -> Unit) {
+fun HikeLogRow(log: HikeLog, mountain: Mountain?, onClick: () -> Unit) {
     val mountainName = mountain?.name ?: (if (log.mountainId.contains("_")) {
         log.mountainId.substringAfter("_").replace("-", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
     } else "Philippine Peak")
 
-    val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-    val dateString = dateFormat.format(Date(log.dateTimeStart))
+    val dateString = formatDateRange(log.dateTimeStart, log.dateTimeEnd)
     val elevation = mountain?.elevationMASL
+    val numberFormat = java.text.NumberFormat.getNumberInstance(Locale.US)
 
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            .clickable { onClick() }
+            .background(Color.White)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
+            verticalAlignment = Alignment.Top
         ) {
-            // Left circular mountain icon with light Glider Blue background tint
+            // Thumbnail matching Mountains screen
             Surface(
-                shape = CircleShape,
-                color = if (log.didSummit) Color(0xFFE8F0FE) else Color(0xFFE8EAED),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF1F3F4),
                 modifier = Modifier.size(56.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
-                        imageVector = if (log.didSummit) Icons.Default.Terrain else Icons.Default.DirectionsWalk,
+                        imageVector = Icons.Default.Terrain,
                         contentDescription = null,
-                        tint = if (log.didSummit) Color(0xFF1A73E8) else Color(0xFF5F6368),
+                        tint = Color(0xFFBDC1C6),
                         modifier = Modifier.size(28.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-            // Center content column
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
+            // Details column
+            Column(modifier = Modifier.weight(1f)) {
+                // Mountain Name
                 // Mountain Name
                 Text(
                     text = mountainName,
-                    fontSize = 19.sp,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF202124),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Elevation & Date on a single line
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Elevation and Date
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     if (elevation != null && elevation > 0) {
                         Text(
-                            text = "$elevation MASL",
+                            text = "${numberFormat.format(elevation)} MASL",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF70757A)
+                            color = Color(0xFF1A73E8)
                         )
                         Text(
-                            text = "·",
+                            text = "  ·  ",
                             fontSize = 13.sp,
-                            color = Color(0xFF70757A)
+                            color = Color(0xFF9AA0A6)
                         )
                     }
                     Text(
                         text = dateString,
                         fontSize = 13.sp,
-                        color = Color(0xFF70757A)
-                    )
-                }
-
-                // Region text
-                if (!mountain?.region.isNullOrBlank()) {
-                    Text(
-                        text = mountain?.region ?: "",
-                        fontSize = 13.sp,
-                        color = Color(0xFF70757A),
+                        color = Color(0xFF5F6368),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                // Trail / Route Badge
-                if (!log.trailName.isNullOrBlank()) {
-                    val trailText = if (log.routeType == "Traverse" && log.exitTrailName.isNotBlank()) {
-                        "${log.trailName} ➔ ${log.exitTrailName} (Traverse)"
-                    } else if (log.routeType == "Traverse") {
-                        "${log.trailName} (Traverse)"
-                    } else if (log.routeType == "Circuit") {
-                        "${log.trailName} (Circuit)"
-                    } else {
-                        "${log.trailName} (Back Trail)"
-                    }
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFFE8F0FE)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Timeline,
-                                contentDescription = null,
-                                tint = Color(0xFF1A73E8),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text(
-                                text = trailText,
-                                color = Color(0xFF1A73E8),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
+                // Region
+                if (!mountain?.region.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = mountain?.region ?: "",
+                        fontSize = 13.sp,
+                        color = Color(0xFF5F6368),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
-                // Status Outcome Badge (Summited / Backed Out)
-                Surface(
-                    shape = CircleShape,
-                    color = if (log.didSummit) Color(0xFFE8F0FE) else Color(0xFFE8EAED)
+                Spacer(modifier = Modifier.height(6.dp))
+                
+                // Badges Row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // Trail / Route Badge
+                    if (!log.trailName.isNullOrBlank()) {
+                        val trailText = if (log.routeType == "Traverse" && log.exitTrailName.isNotBlank()) {
+                            "${log.trailName} → ${log.exitTrailName} (Traverse)"
+                        } else if (log.routeType == "Traverse") {
+                            "${log.trailName} (Traverse)"
+                        } else if (log.routeType == "Circuit") {
+                            "${log.trailName} (Circuit)"
+                        } else {
+                            "${log.trailName} (Back Trail)"
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFE8F0FE)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Timeline,
+                                    contentDescription = null,
+                                    tint = Color(0xFF1A73E8),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = trailText,
+                                    color = Color(0xFF1A73E8),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+
+                    // Summited / Backed Out status
                     Text(
                         text = if (log.didSummit) "Summited" else "Backed Out",
-                        color = if (log.didSummit) Color(0xFF1A73E8) else Color(0xFF5F6368),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        color = if (log.didSummit) Color(0xFF1A73E8) else Color(0xFFD93025), // Blue for Summited, Red for Backed Out
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -793,9 +522,47 @@ fun HikeLogCard(log: HikeLog, mountain: Mountain?, onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = Color(0xFFBDC1C6),
-                modifier = Modifier.size(20.dp)
+                tint = Color(0xFF9AA0A6),
+                modifier = Modifier
+                    .size(20.dp)
+                    .align(Alignment.CenterVertically)
             )
         }
+        HorizontalDivider(
+            color = Color(0xFFF1F3F4),
+            thickness = 1.dp,
+            modifier = Modifier.padding(start = 86.dp)
+        )
+    }
+}
+
+fun formatDateRange(startMillis: Long, endMillis: Long): String {
+    val startDate = Date(startMillis)
+    val endDate = Date(if (endMillis > 0) endMillis else startMillis)
+
+    val calendarStart = java.util.Calendar.getInstance().apply { time = startDate }
+    val calendarEnd = java.util.Calendar.getInstance().apply { time = endDate }
+
+    val startYear = calendarStart.get(java.util.Calendar.YEAR)
+    val endYear = calendarEnd.get(java.util.Calendar.YEAR)
+    val startMonth = calendarStart.get(java.util.Calendar.MONTH)
+    val endMonth = calendarEnd.get(java.util.Calendar.MONTH)
+    val startDay = calendarStart.get(java.util.Calendar.DAY_OF_MONTH)
+    val endDay = calendarEnd.get(java.util.Calendar.DAY_OF_MONTH)
+
+    val monthFormat = SimpleDateFormat("MMMM", Locale.getDefault())
+
+    return if (startYear == endYear) {
+        if (startMonth == endMonth) {
+            if (startDay == endDay) {
+                "${monthFormat.format(startDate)} $startDay, $startYear"
+            } else {
+                "${monthFormat.format(startDate)} $startDay to $endDay, $startYear"
+            }
+        } else {
+            "${monthFormat.format(startDate)} $startDay to ${monthFormat.format(endDate)} $endDay, $startYear"
+        }
+    } else {
+        "${monthFormat.format(startDate)} $startDay, $startYear to ${monthFormat.format(endDate)} $endDay, $endYear"
     }
 }

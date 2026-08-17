@@ -14,14 +14,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -30,6 +37,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devmarkabrasaldo.PataGilid.domain.models.MountainList
+import com.devmarkabrasaldo.PataGilid.ui.components.SearchFilterToolbar
+import com.devmarkabrasaldo.PataGilid.ui.components.SortMenuItem
+import com.devmarkabrasaldo.PataGilid.ui.components.SortOrderMenuSection
+
+enum class ListSortOrder(val label: String) {
+    ASCENDING("Ascending"),
+    DESCENDING("Descending")
+}
 
 private val GliderBlue = Color(0xFF1A73E8)
 private val SurfaceGray = Color(0xFFF8F9FA)
@@ -48,6 +63,27 @@ fun MountainListsScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var editTarget by remember { mutableStateOf<MountainList?>(null) }
     var deleteTarget by remember { mutableStateOf<MountainList?>(null) }
+    var showLoadingUI by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.isLoading) {
+        if (uiState.isLoading) {
+            kotlinx.coroutines.delay(400)
+            if (uiState.isLoading) showLoadingUI = true
+        } else {
+            showLoadingUI = false
+        }
+    }
+
+    var isSearchVisible by remember { mutableStateOf(false) }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var sortOrder by remember { mutableStateOf(ListSortOrder.ASCENDING) }
+    
+    val sortedLists = remember(lists, sortOrder) {
+        when (sortOrder) {
+            ListSortOrder.ASCENDING -> lists.sortedBy { it.name }
+            ListSortOrder.DESCENDING -> lists.sortedByDescending { it.name }
+        }
+    }
 
     // Error snackbar
     val snackbarHostState = remember { SnackbarHostState() }
@@ -61,6 +97,52 @@ fun MountainListsScreen(
     Scaffold(
         modifier = modifier,
         containerColor = SurfaceGray,
+        topBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(top = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SearchFilterToolbar(
+                        isSearchVisible = isSearchVisible,
+                        onToggleSearch = { isSearchVisible = !isSearchVisible },
+                        isMenuExpanded = menuExpanded,
+                        onToggleMenu = { menuExpanded = it },
+                        onAdd = { showCreateDialog = true },
+                        menuContent = {
+                            SortOrderMenuSection(
+                                items = ListSortOrder.entries.map { order ->
+                                    SortMenuItem(
+                                        label = order.label,
+                                        isSelected = sortOrder == order,
+                                        onClick = {
+                                            sortOrder = order
+                                            menuExpanded = false
+                                        }
+                                    )
+                                }
+                            )
+                        }
+                    )
+                }
+
+                Text(
+                    text = "Lists",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF202124),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
@@ -68,68 +150,43 @@ fun MountainListsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Header
-            Row(
+
+
+            // Body
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(horizontal = 20.dp, vertical = 18.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .background(SurfaceGray)
             ) {
-                Column {
-                    Text(
-                        text = "My Lists",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1C1B1F)
-                    )
-                    Text(
-                        text = "Your personal mountain collections",
-                        fontSize = 14.sp,
-                        color = Color(0xFF5F6368)
-                    )
-                }
-                Surface(
-                    shape = CircleShape,
-                    color = Color.Transparent,
-                    border = BorderStroke(1.dp, GliderBlue.copy(alpha = 0.2f)),
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable { showCreateDialog = true }
-                ) {
-                    Text(
-                        "Add List",
-                        color = GliderBlue,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-            }
+                com.devmarkabrasaldo.PataGilid.ui.components.CountBanner(
+                    filteredCount = lists.size,
+                    totalCount = lists.size,
+                    noun = "Lists",
+                    showDivider = true
+                )
 
-            Divider(color = Color(0xFFE0E0E0), thickness = 0.5.dp)
-
-            if (uiState.isLoading && lists.isEmpty()) {
-                // Loading shimmer placeholder
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = GliderBlue)
-                }
-            } else if (lists.isEmpty()) {
-                EmptyListsPlaceholder()
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(lists, key = { it.id }) { list ->
-                        MountainListCard(
-                            list = list,
-                            onClick = { onNavigateToDetail(list) },
-                            onEdit = { editTarget = list },
-                            onDelete = { deleteTarget = list }
-                        )
+                if (showLoadingUI && lists.isEmpty()) {
+                    // Loading shimmer placeholder
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = GliderBlue)
                     }
-                    item { Spacer(Modifier.height(80.dp)) } // FAB clearance
+                } else if (lists.isEmpty()) {
+                    EmptyListsPlaceholder()
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(sortedLists, key = { it.id }) { list ->
+                            MountainListCard(
+                                list = list,
+                                onClick = { onNavigateToDetail(list) },
+                                onEdit = { editTarget = list },
+                                onDelete = { deleteTarget = list }
+                            )
+                        }
+                        item { Spacer(Modifier.height(80.dp)) } // FAB clearance
+                    }
                 }
             }
         }
@@ -210,12 +267,12 @@ private fun MountainListCard(
             // Emoji badge
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(GliderBlue.copy(alpha = 0.10f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(list.emoji, fontSize = 24.sp)
+                Text(list.emoji, fontSize = 28.sp)
             }
 
             Spacer(Modifier.width(14.dp))
@@ -223,8 +280,8 @@ private fun MountainListCard(
             Column(Modifier.weight(1f)) {
                 Text(
                     text = list.name,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
                     color = Color(0xFF1C1B1F),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -232,30 +289,60 @@ private fun MountainListCard(
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = if (list.mountainCount == 1) "1 mountain" else "${list.mountainCount} mountains",
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     color = Color(0xFF5F6368)
                 )
             }
+            
+            Spacer(Modifier.width(12.dp))
 
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        Icons.Default.FormatListBulleted,
-                        contentDescription = "Options",
-                        tint = Color(0xFF5F6368)
-                    )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Peak count badge
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFF1F3F4)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = list.mountainCount.toString(),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color(0xFF1C1B1F)
+                        )
+                        Text(
+                            text = "peaks",
+                            fontSize = 10.sp,
+                            color = Color(0xFF5F6368)
+                        )
+                    }
                 }
-                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text("Rename") },
-                        leadingIcon = { Icon(Icons.Default.Edit, null) },
-                        onClick = { showMenu = false; onEdit() }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                        leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
-                        onClick = { showMenu = false; onDelete() }
-                    )
+                
+                Spacer(Modifier.width(8.dp))
+                
+                Box {
+                    IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Options",
+                            tint = Color(0xFFBDC1C6),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Rename") },
+                            leadingIcon = { Icon(Icons.Default.Edit, null) },
+                            onClick = { showMenu = false; onEdit() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                            onClick = { showMenu = false; onDelete() }
+                        )
+                    }
                 }
             }
         }
@@ -266,7 +353,6 @@ private fun MountainListCard(
 private fun EmptyListsPlaceholder() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("🏔️", fontSize = 56.sp)
             Text(
                 "No lists yet",
                 fontSize = 20.sp,
@@ -293,11 +379,19 @@ private fun ListNameDialog(
 ) {
     var name by remember { mutableStateOf(initialName) }
     var emoji by remember { mutableStateOf(initialEmoji) }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     val quickEmojis = listOf("🏔️", "⛰️", "🌋", "🗻", "🌿", "🧭", "🎒", "🥾", "🏕️", "📍", "⭐", "❤️")
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        titleContentColor = Color.Black,
+        textContentColor = Color.Black,
         title = { Text(title, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -332,21 +426,35 @@ private fun ListNameDialog(
                     placeholder = { Text("e.g. Luzon Trip 2026") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = GliderBlue,
+                        unfocusedBorderColor = Color(0xFFE8EAED),
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedLabelColor = GliderBlue,
+                        unfocusedLabelColor = Color(0xFF5F6368),
+                        cursorColor = GliderBlue
+                    )
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = { if (name.isNotBlank()) onConfirm(name.trim(), emoji) },
-                colors = ButtonDefaults.buttonColors(containerColor = GliderBlue),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = GliderBlue,
+                    contentColor = Color.White
+                ),
                 enabled = name.isNotBlank()
             ) {
                 Text("Save", fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { 
+                Text("Cancel", color = GliderBlue) 
+            }
         }
     )
 }

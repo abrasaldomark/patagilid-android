@@ -51,14 +51,19 @@ class MountainListRepository(
                         name = doc.getString("name") ?: return@mapNotNull null,
                         emoji = doc.getString("emoji") ?: "🏔️",
                         mountainIds = (doc.get("mountainIds") as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-                        createdAt = doc.getTimestamp("createdAt")?.toDate()?.time ?: System.currentTimeMillis(),
-                        updatedAt = doc.getTimestamp("updatedAt")?.toDate()?.time ?: System.currentTimeMillis()
+                        createdAt = (doc.get("createdAt") as? com.google.firebase.Timestamp)?.toDate()?.time 
+                            ?: (doc.get("createdAt") as? Number)?.toLong() 
+                            ?: System.currentTimeMillis(),
+                        updatedAt = (doc.get("updatedAt") as? com.google.firebase.Timestamp)?.toDate()?.time 
+                            ?: (doc.get("updatedAt") as? Number)?.toLong() 
+                            ?: System.currentTimeMillis()
                     )
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse list document ${doc.id}: ${e.message}")
                     null
                 }
             }
+            dao.deleteAllListsForUser(uid)
             dao.upsertLists(lists)
             Log.d(TAG, "Synced ${lists.size} mountain lists from Firestore.")
         } catch (e: Exception) {

@@ -14,6 +14,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.Schedule
@@ -43,7 +45,6 @@ import coil.compose.AsyncImage
 import com.devmarkabrasaldo.PataGilid.di.AppContainer
 import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListsViewModel
 
 val GliderBlue = Color(0xFF3B82F6)
 val SummitSteel = Color(0xFF6B7280)
@@ -64,11 +65,9 @@ fun MountainDetailScreen(
     val mountain by mountainFlow.collectAsState(initial = null)
     val isAdmin = remember { container.authRepository.isAdmin }
 
-    // Lists ViewModel
-    val listsViewModel: MountainListsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-        factory = MountainListsViewModel.Factory(container.mountainListRepository)
-    )
-    val lists by listsViewModel.lists.collectAsStateWithLifecycle()
+    // Observe lists directly from Room without triggering a ViewModel sync
+    val lists by remember { container.mountainListRepository.observeLists() }
+        .collectAsState(initial = emptyList())
     val isSaved = lists.any { it.mountainIds.contains(mountainId) }
     var showSaveToListSheet by remember { mutableStateOf(false) }
     
@@ -133,20 +132,33 @@ fun MountainDetailScreen(
                 actions = {
                     // Bookmark removed as requested
                     Surface(
-                        shape = CircleShape,
-                        color = Color.Transparent,
-                        border = BorderStroke(1.dp, GliderBlue.copy(alpha = 0.2f)),
-                        modifier = Modifier
-                            .padding(end = 12.dp)
-                            .clip(CircleShape)
-                            .clickable { onNavigateToLogClimb(mountainId) }
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.White,
+                        shadowElevation = 6.dp,
+                        modifier = Modifier.padding(end = 12.dp)
                     ) {
-                        Text(
-                            "Add Climb",
-                            color = GliderBlue,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = GliderBlue,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .clickable { onNavigateToLogClimb(mountainId) }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Add Climb",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -238,12 +250,13 @@ fun MountainDetailScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.Bottom
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                             Text(
                                 text = peak.name,
                                 color = Color.White,
                                 fontSize = 32.sp,
-                                fontWeight = FontWeight.ExtraBold
+                                fontWeight = FontWeight.ExtraBold,
+                                lineHeight = 38.sp
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -727,8 +740,8 @@ fun MountainDetailScreen(
         SaveToListBottomSheet(
             mountainId = mountainId,
             lists = lists,
-            onAdd = { listId -> listsViewModel.addMountain(listId, mountainId) },
-            onRemove = { listId -> listsViewModel.removeMountain(listId, mountainId) },
+            onAdd = { listId -> coroutineScope.launch { container.mountainListRepository.addMountain(listId, mountainId) } },
+            onRemove = { listId -> coroutineScope.launch { container.mountainListRepository.removeMountain(listId, mountainId) } },
             onDismiss = { showSaveToListSheet = false }
         )
     }
@@ -781,6 +794,7 @@ fun SaveToListBottomSheet(
                 "Save to List",
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
+                color = Color.Black,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
             )
 
@@ -803,11 +817,12 @@ fun SaveToListBottomSheet(
                 lists.forEach { list ->
                     val isInList = list.mountainIds.contains(mountainId)
                     ListItem(
-                        headlineContent = { Text(list.name, fontWeight = FontWeight.Medium) },
+                        headlineContent = { Text(list.name, fontWeight = FontWeight.Medium, color = Color.Black) },
                         supportingContent = {
                             Text(
                                 if (list.mountainCount == 1) "1 mountain" else "${list.mountainCount} mountains",
-                                fontSize = 12.sp
+                                fontSize = 12.sp,
+                                color = Color(0xFF5F6368)
                             )
                         },
                         leadingContent = {

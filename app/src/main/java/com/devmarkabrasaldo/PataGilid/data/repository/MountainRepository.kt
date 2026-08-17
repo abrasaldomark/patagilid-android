@@ -8,12 +8,17 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
+import com.devmarkabrasaldo.PataGilid.data.local.HikeLogDao
+
 class MountainRepository(
     private val mountainDao: MountainDao,
+    private val hikeLogDao: HikeLogDao,
     private val syncService: MountainSyncService
 ) {
     private val db = FirebaseFirestore.getInstance()
@@ -222,22 +227,49 @@ class MountainRepository(
         val docRef = db.collection("users").document(userId).collection("hikeLogs").document()
         log.id = docRef.id
         docRef.set(log.toFirestoreMap()).await()
+        hikeLogDao.upsertLog(log)
         docRef.id
     }
 
     suspend fun getUserHikeLogs(): List<HikeLog> = withContext(Dispatchers.IO) {
         val userId = auth.currentUser?.uid ?: return@withContext emptyList()
-        val snapshot = db.collection("users").document(userId).collection("hikeLogs")
-            .orderBy("dateTimeEnd", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .get()
-            .await()
-        snapshot.documents.mapNotNull { doc ->
-            doc.toHikeLogSafely()
+        // Start background sync if not already done
+        GlobalScope.launch(Dispatchers.IO) {
+            syncUserHikeLogs(userId)
+        }
+        hikeLogDao.getLogsByUser(userId)
+    }
+
+    fun observeUserHikeLogs(): Flow<List<HikeLog>> {
+        val userId = auth.currentUser?.uid ?: return kotlinx.coroutines.flow.emptyFlow()
+        // Start background sync
+        GlobalScope.launch(Dispatchers.IO) {
+            syncUserHikeLogs(userId)
+        }
+        // Return Flow from local DB
+        return hikeLogDao.observeLogsByUser(userId)
+    }
+
+    private suspend fun syncUserHikeLogs(userId: String) {
+        try {
+            val snapshot = db.collection("users").document(userId).collection("hikeLogs")
+                .get()
+                .await()
+            val remoteLogs = snapshot.documents.mapNotNull { doc ->
+                doc.toHikeLogSafely()
+            }
+            hikeLogDao.deleteAllLogsForUser(userId)
+            hikeLogDao.upsertLogs(remoteLogs)
+        } catch (e: Exception) {
+            Log.e("MountainRepository", "Error syncing hike logs: ${e.localizedMessage}")
         }
     }
 
     suspend fun deleteHikeLog(logId: String) = withContext(Dispatchers.IO) {
-        val userId = auth.currentUser?.uid ?: return@withContext
-        db.collection("users").document(userId).collection("hikeLogs").document(logId).delete().await()
+        val userId = auth.currentUser?.uid ?: throw IllegalStateException("Not signed in")
+        db.collection("users").document(userId).collection("hikeLogs").document(logId)
+            .delete()
+            .await()
+        hikeLogDao.deleteLogById(logId)
     }
 }

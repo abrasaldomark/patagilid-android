@@ -244,7 +244,7 @@ fun SummitLogDetailScreen(
                 ) {
                     Column {
                         InfoRow(
-                            icon = { Icon(Icons.Default.Terrain, contentDescription = null, tint = Color(0xFF007AFF)) },
+                            icon = { Icon(Icons.Default.Terrain, contentDescription = null, tint = Color(0xFF8E8E93)) },
                             label = "Mountain",
                             value = mtn?.name ?: "Unknown"
                         )
@@ -256,20 +256,20 @@ fun SummitLogDetailScreen(
                         )
                         HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                         InfoRow(
-                            icon = { Icon(Icons.Default.Place, contentDescription = null, tint = Color(0xFFFF3B30)) },
+                            icon = { Icon(Icons.Default.Place, contentDescription = null, tint = Color(0xFF8E8E93)) },
                             label = "Region",
                             value = mtn?.region ?: "Unknown"
                         )
                         HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                         InfoRow(
-                            icon = { Icon(Icons.Default.Public, contentDescription = null, tint = Color(0xFF007AFF)) },
+                            icon = { Icon(Icons.Default.Public, contentDescription = null, tint = Color(0xFF8E8E93)) },
                             label = "Island Group",
                             value = mtn?.islandGroup ?: "Unknown"
                         )
                         HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                         val latLng = if (mtn?.latitude != null && mtn.longitude != null) "${mtn.latitude}, ${mtn.longitude}" else "N/A"
                         InfoRow(
-                            icon = { Icon(GlobeLocationPin, contentDescription = null, tint = Color(0xFF007AFF)) },
+                            icon = { Icon(GlobeLocationPin, contentDescription = null, tint = Color(0xFF8E8E93)) },
                             label = "Coordinates",
                             value = latLng,
                             showChevron = true
@@ -288,7 +288,7 @@ fun SummitLogDetailScreen(
                         when (hikeLog.routeType) {
                             "Traverse" -> {
                                 InfoRow(
-                                    icon = { Icon(Icons.Default.Route, contentDescription = null, tint = Color(0xFFAF52DE)) },
+                                    icon = { Icon(Icons.Default.Route, contentDescription = null, tint = Color(0xFF8E8E93)) },
                                     label = "Climb Style",
                                     value = "Traverse"
                                 )
@@ -300,14 +300,14 @@ fun SummitLogDetailScreen(
                                 )
                                 HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                                 InfoRow(
-                                    icon = { Icon(FlagCheck, contentDescription = null, tint = Color(0xFFFF3B30)) },
+                                    icon = { Icon(FlagCheck, contentDescription = null, tint = Color(0xFF8E8E93)) },
                                     label = "Exit Trail",
                                     value = hikeLog.exitTrailName.ifBlank { "N/A" }
                                 )
                             }
                             "Circuit" -> {
                                 InfoRow(
-                                    icon = { Icon(Icons.Default.Loop, contentDescription = null, tint = Color(0xFFFF9500)) },
+                                    icon = { Icon(Icons.Default.Loop, contentDescription = null, tint = Color(0xFF8E8E93)) },
                                     label = "Climb Style",
                                     value = "Circuit"
                                 )
@@ -320,7 +320,7 @@ fun SummitLogDetailScreen(
                                 if (hikeLog.waypoints.isNotEmpty()) {
                                     HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                                     InfoRow(
-                                        icon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF34C759)) },
+                                        icon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF8E8E93)) },
                                         label = "Waypoints",
                                         value = hikeLog.waypoints.joinToString(", ")
                                     )
@@ -328,7 +328,7 @@ fun SummitLogDetailScreen(
                             }
                             else -> { // Back Trail
                                 InfoRow(
-                                    icon = { Icon(UTurnLeft, contentDescription = null, tint = Color(0xFF007AFF)) },
+                                    icon = { Icon(UTurnLeft, contentDescription = null, tint = Color(0xFF8E8E93)) },
                                     label = "Climb Style",
                                     value = "Back Trail"
                                 )
@@ -342,7 +342,7 @@ fun SummitLogDetailScreen(
                         }
                         HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                         InfoRow(
-                            icon = { Icon(Icons.Default.Speed, contentDescription = null, tint = Color(0xFF007AFF)) },
+                            icon = { Icon(Icons.Default.Speed, contentDescription = null, tint = Color(0xFF8E8E93)) },
                             label = "Experienced Difficulty",
                             value = hikeLog.trailDifficulty ?: "N/A"
                         )
@@ -370,23 +370,40 @@ fun SummitLogDetailScreen(
                         )
                         HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                         InfoRow(
-                            icon = { Icon(Icons.Default.StopCircle, contentDescription = null, tint = Color(0xFFFF3B30)) },
+                            icon = { Icon(Icons.Default.StopCircle, contentDescription = null, tint = Color(0xFF8E8E93)) },
                             label = "End",
                             value = endStr
                         )
                         HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                         InfoRow(
-                            icon = { Icon(Icons.Outlined.Timer, contentDescription = null, tint = Color(0xFFAF52DE)) },
+                            icon = { Icon(Icons.Outlined.Timer, contentDescription = null, tint = Color(0xFF8E8E93)) },
                             label = "Duration",
                             value = durationStr
                         )
                         HorizontalDivider(modifier = Modifier.padding(start = 52.dp), color = Color(0xFFE5E5EA), thickness = 0.5.dp)
                         val outcomeText = if (hikeLog.didSummit) "Successful Summit" else "Backed Out"
-                        val outcomeColor = if (hikeLog.didSummit) Color(0xFF007AFF) else Color(0xFFFF3B30)
+                        val outcomeValueColor = if (hikeLog.didSummit) Color.Black else Color(0xFFFF3B30)
                         InfoRow(
-                            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = outcomeColor) },
+                            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF8E8E93)) },
                             label = "Outcome",
-                            value = outcomeText
+                            value = outcomeText,
+                            valueColor = outcomeValueColor
+                        )
+                    }
+                }
+
+                if (hikeLog.climbNotes.isNotBlank()) {
+                    SectionLabel("CLIMB NOTES")
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = hikeLog.climbNotes,
+                            color = Color.Black,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
                 }

@@ -54,7 +54,7 @@ fun DocumentSnapshot.toHikeLogSafely(): HikeLog? {
 
 fun HikeLog.toFirestoreMap(): Map<String, Any?> {
     return hashMapOf(
-        "id" to (id ?: ""),
+        "id" to id,
         "userId" to userId,
         "mountainId" to mountainId,
         "dateTimeStart" to Timestamp(Date(dateTimeStart)),

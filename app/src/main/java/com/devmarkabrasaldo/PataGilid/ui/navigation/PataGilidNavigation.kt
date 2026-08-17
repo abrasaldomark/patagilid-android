@@ -22,6 +22,7 @@ import com.devmarkabrasaldo.PataGilid.ui.screens.profile.AdminModerationQueueScr
 import com.devmarkabrasaldo.PataGilid.ui.screens.profile.DonationQRScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListDetailScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListsViewModel
+import com.devmarkabrasaldo.PataGilid.ui.screens.climbs.ClimbsListViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 object Screen {
@@ -56,7 +57,11 @@ fun PataGilidNavigation(container: AppContainer) {
     val currentUser by container.authRepository.currentUser.collectAsState()
 
     val listsViewModel: MountainListsViewModel = viewModel(
-        factory = MountainListsViewModel.Factory(container.mountainListRepository)
+        factory = MountainListsViewModel.Factory(container.mountainListRepository, container.mountainRepository)
+    )
+    
+    val climbsListViewModel: ClimbsListViewModel = viewModel(
+        factory = ClimbsListViewModel.Factory(container.mountainRepository)
     )
     
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -99,6 +104,8 @@ fun PataGilidNavigation(container: AppContainer) {
         composable(Screen.MAIN) {
             MainScreen(
                 container = container,
+                listsViewModel = listsViewModel,
+                climbsListViewModel = climbsListViewModel,
                 onNavigateToDetail = { id -> navController.navigate(Screen.mountainDetail(id)) },
                 onNavigateToAddCustom = { navController.navigate(Screen.ADD_CUSTOM_MOUNTAIN) },
                 onNavigateToHikeLogDetail = { logId -> navController.navigate(Screen.summitLogDetail(logId)) },
@@ -222,7 +229,12 @@ fun PataGilidNavigation(container: AppContainer) {
                     mountainRepository = container.mountainRepository,
                     viewModel = listsViewModel,
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToMountainDetail = { mountainId -> navController.navigate(Screen.mountainDetail(mountainId)) }
+                    onNavigateToMountainDetail = { mountainId -> navController.navigate(Screen.mountainDetail(mountainId)) },
+                    onBrowseMountains = {
+                        navController.navigate(Screen.MAIN) {
+                            popUpTo(Screen.MAIN) { inclusive = true }
+                        }
+                    }
                 )
             }
         }

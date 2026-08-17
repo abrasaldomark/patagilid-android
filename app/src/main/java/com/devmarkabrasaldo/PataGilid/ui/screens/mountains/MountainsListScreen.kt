@@ -17,6 +17,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.devmarkabrasaldo.PataGilid.ui.components.*
 import com.devmarkabrasaldo.PataGilid.R
 import com.devmarkabrasaldo.PataGilid.data.repository.MountainRepository
 import com.devmarkabrasaldo.PataGilid.data.repository.AuthRepository
@@ -58,6 +61,7 @@ fun MountainsListScreen(
 
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var isSearchVisible by remember { mutableStateOf(false) }
+    val searchFocusRequester = remember { FocusRequester() }
 
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.US) }
 
@@ -76,169 +80,46 @@ fun MountainsListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Top-Left Contribute Mountain Button
-                    TextButton(
-                        onClick = onNavigateToAddCustom,
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AddCircle,
-                            contentDescription = "Contribute Mountain",
-                            tint = Color(0xFF1A73E8),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Contribute Mountain",
-                            color = Color(0xFF1A73E8),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
-                        )
-                    }
 
                     // Top-Right Icons (Search & Filter/Sort Menu)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        IconButton(onClick = { isSearchVisible = !isSearchVisible }) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Search",
-                                tint = Color(0xFF1A73E8),
-                                modifier = Modifier.size(26.dp)
-                            )
-                        }
-                        Box {
-                            IconButton(onClick = { sortMenuExpanded = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.FilterList,
-                                    contentDescription = "Sort and Filter",
-                                    tint = Color(0xFF1A73E8),
-                                    modifier = Modifier.size(26.dp)
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = sortMenuExpanded,
-                                onDismissRequest = { sortMenuExpanded = false },
-                                modifier = Modifier.background(Color.White),
-                                shape = RoundedCornerShape(16.dp),
-                                shadowElevation = 8.dp
-                            ) {
-                                // Sort Order Section Header
-                                Text(
-                                    text = "Sort Order",
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF5F6368)
-                                )
-                                SortType.entries.forEach { type ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = type.label,
-                                                color = Color(0xFF202124),
-                                                fontSize = 15.sp,
-                                                fontWeight = if (selectedSort == type) FontWeight.SemiBold else FontWeight.Normal
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            if (selectedSort == type) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = "Selected",
-                                                    tint = Color(0xFF1A73E8),
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            } else {
-                                                Spacer(modifier = Modifier.size(20.dp))
-                                            }
-                                        },
+                    SearchFilterToolbar(
+                        isSearchVisible = isSearchVisible,
+                        onToggleSearch = { isSearchVisible = !isSearchVisible },
+                        isMenuExpanded = sortMenuExpanded,
+                        onToggleMenu = { sortMenuExpanded = it },
+                        onAdd = { onNavigateToAddCustom() },
+                        menuContent = {
+                            SortOrderMenuSection(
+                                items = SortType.entries.map { type ->
+                                    SortMenuItem(
+                                        label = type.label,
+                                        isSelected = selectedSort == type,
                                         onClick = {
                                             vm.sortType.value = type
                                             sortMenuExpanded = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-                                    )
-                                }
-
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 6.dp),
-                                    color = Color(0xFFE8EAED)
-                                )
-
-                                // Filter by Region Section Header
-                                Text(
-                                    text = "Filter by Region",
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF5F6368)
-                                )
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = "All Regions",
-                                            color = Color(0xFF202124),
-                                            fontSize = 15.sp,
-                                            fontWeight = if (selectedRegion == null) FontWeight.SemiBold else FontWeight.Normal
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        if (selectedRegion == null) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = Color(0xFF1A73E8),
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        } else {
-                                            Spacer(modifier = Modifier.size(20.dp))
                                         }
-                                    },
-                                    onClick = {
-                                        vm.selectRegion(null)
-                                        sortMenuExpanded = false
-                                    },
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-                                )
-
-                                availableRegions.forEach { region ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = region,
-                                                color = Color(0xFF202124),
-                                                fontSize = 15.sp,
-                                                fontWeight = if (selectedRegion == region) FontWeight.SemiBold else FontWeight.Normal
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            if (selectedRegion == region) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = "Selected",
-                                                    tint = Color(0xFF1A73E8),
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            } else {
-                                                Spacer(modifier = Modifier.size(20.dp))
-                                            }
-                                        },
-                                        onClick = {
-                                            vm.selectRegion(region)
-                                            sortMenuExpanded = false
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
                                     )
                                 }
-                            }
+                            )
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 6.dp),
+                                color = Color(0xFFE8EAED)
+                            )
+
+                            RegionFilterMenuSection(
+                                availableRegions = availableRegions,
+                                selectedRegion = selectedRegion,
+                                onSelectRegion = {
+                                    vm.selectRegion(it)
+                                    sortMenuExpanded = false
+                                }
+                            )
                         }
-                    }
+                    )
                 }
 
                 // Title Text matching iOS exactly
@@ -325,7 +206,8 @@ fun MountainsListScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .focusRequester(searchFocusRequester),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -337,78 +219,33 @@ fun MountainsListScreen(
                             unfocusedContainerColor = Color(0xFFF8F9FA)
                         )
                     )
-                }
-
-                // Island Group Filter Pills and Active Region Badge matching iOS
-                Surface(
-                    color = Color(0xFFF8F9FA),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        FilterPill(
-                            text = "All (${numberFormat.format(totalCount)})",
-                            iconResId = R.drawable.philippines_icon,
-                            isSelected = selectedIsland == null && selectedRegion == null,
-                            onClick = { vm.resetFilters() }
-                        )
-                        IslandGroup.entries.forEach { island ->
-                            val iconRes = when (island) {
-                                IslandGroup.LUZON -> R.drawable.luzon_icon
-                                IslandGroup.VISAYAS -> R.drawable.visayas_icon
-                                IslandGroup.MINDANAO -> R.drawable.mindanao_icon
-                            }
-                            FilterPill(
-                                text = island.displayName,
-                                iconResId = iconRes,
-                                isSelected = selectedIsland == island,
-                                onClick = { vm.selectIslandGroup(if (selectedIsland == island) null else island) }
-                            )
-                        }
-
-                        // Active Region Badge indicator
-                        if (selectedRegion != null) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color(0xFF1A73E8),
-                                modifier = Modifier.clickable { vm.selectRegion(null) }
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    Text(
-                                        text = selectedRegion!!,
-                                        color = Color.White,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.Cancel,
-                                        contentDescription = "Clear Region Filter",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
+                    LaunchedEffect(Unit) {
+                        searchFocusRequester.requestFocus()
                     }
                 }
 
+                IslandGroupFilterBar(
+                    allCount = totalCount,
+                    isAllSelected = selectedIsland == null && selectedRegion == null,
+                    selectedIslandGroup = selectedIsland,
+                    onResetFilters = { vm.resetFilters() },
+                    onSelectIslandGroup = { vm.selectIslandGroup(it) },
+                    extraBadges = {
+                        if (selectedRegion != null) {
+                            DismissableBadge(
+                                text = selectedRegion!!,
+                                onDismiss = { vm.selectRegion(null) }
+                            )
+                        }
+                    }
+                )
+
                 // Peak Count Subtitle
-                Text(
-                    text = "Showing ${numberFormat.format(mountains.size)} of ${numberFormat.format(totalCount)} Mountains",
-                    fontSize = 13.sp,
-                    color = Color(0xFF5F6368),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                CountBanner(
+                    filteredCount = mountains.size,
+                    totalCount = totalCount,
+                    noun = "Mountains",
+                    showDivider = false
                 )
 
                 // Subtle Sync Progress Indicator
@@ -463,41 +300,7 @@ fun MountainsListScreen(
     }
 }
 
-@Composable
-private fun FilterPill(
-    text: String,
-    iconResId: Int? = null,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        shape = CircleShape,
-        color = if (isSelected) Color(0xFF1A73E8) else Color(0xFFF1F3F4),
-        modifier = Modifier.clickable { onClick() }
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-        ) {
-            if (iconResId != null) {
-                Icon(
-                    painter = painterResource(id = iconResId),
-                    contentDescription = null,
-                    tint = if (isSelected) Color.White else Color(0xFF3C4043),
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-            }
-            Text(
-                text = text,
-                color = if (isSelected) Color.White else Color(0xFF3C4043),
-                fontSize = 14.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-            )
-        }
-    }
-}
+
 
 @Composable
 private fun MountainRowView(

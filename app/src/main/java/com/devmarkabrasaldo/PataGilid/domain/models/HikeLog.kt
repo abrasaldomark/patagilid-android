@@ -1,14 +1,18 @@
 package com.devmarkabrasaldo.PataGilid.domain.models
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.Exclude
 import com.google.firebase.firestore.IgnoreExtraProperties
 import java.io.Serializable
 
+@Entity(tableName = "hike_logs")
 @IgnoreExtraProperties
 data class HikeLog(
+    @PrimaryKey
     @DocumentId
-    var id: String? = null,
+    var id: String = "",
     var userId: String = "",
     var mountainId: String = "",
     var dateTimeStart: Long = 0L,
@@ -20,7 +24,8 @@ data class HikeLog(
     var exitTrailName: String = "",
     var trailDifficulty: String = "",
     var trailClass: String = "",
-    var waypoints: List<String> = emptyList()
+    var waypoints: List<String> = emptyList(),
+    var climbNotes: String = ""
 ) : Serializable {
 
     @get:Exclude

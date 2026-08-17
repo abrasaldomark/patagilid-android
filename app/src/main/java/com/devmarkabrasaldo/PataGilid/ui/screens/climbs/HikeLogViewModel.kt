@@ -27,6 +27,7 @@ class HikeLogViewModel(
     val routeType = MutableStateFlow("Back Trail")
     val exitTrailName = MutableStateFlow("")
     val waypoints = MutableStateFlow<List<String>>(emptyList())
+    val climbNotes = MutableStateFlow("")
     val startDate = MutableStateFlow(System.currentTimeMillis() - 86400000L) // Yesterday
     val endDate = MutableStateFlow(System.currentTimeMillis())
     
@@ -50,6 +51,7 @@ class HikeLogViewModel(
         routeType.value = log.routeType
         exitTrailName.value = log.exitTrailName
         waypoints.value = log.waypoints
+        climbNotes.value = log.climbNotes
         startDate.value = log.dateTimeStart
         endDate.value = log.dateTimeEnd
         existingPhotoUrls = log.photoUrls
@@ -132,7 +134,8 @@ class HikeLogViewModel(
                     trailName = trailName.value,
                     routeType = routeType.value,
                     exitTrailName = if (routeType.value == "Traverse") exitTrailName.value else "",
-                    waypoints = if (routeType.value == "Circuit") waypoints.value.filter { it.isNotBlank() } else emptyList()
+                    waypoints = if (routeType.value == "Circuit") waypoints.value.filter { it.isNotBlank() } else emptyList(),
+                    climbNotes = climbNotes.value.trim()
                 )
                 mountainRepository.saveHikeLog(log)
                 isSubmitting.value = false

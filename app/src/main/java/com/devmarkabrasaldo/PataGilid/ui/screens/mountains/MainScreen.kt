@@ -18,12 +18,13 @@ import com.devmarkabrasaldo.PataGilid.di.AppContainer
 import com.devmarkabrasaldo.PataGilid.ui.screens.climbs.ClimbsListScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListsScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListsViewModel
+import com.devmarkabrasaldo.PataGilid.ui.screens.climbs.ClimbsListViewModel
 import com.devmarkabrasaldo.PataGilid.ui.screens.profile.ProfileScreen
 
 enum class MainTab(val title: String, val icon: ImageVector) {
     MOUNTAINS("Mountains", Icons.Default.Terrain),
-    MY_CLIMBS("My Climbs", Icons.Default.Hiking),
-    MY_LISTS("My Lists", Icons.Default.Star),
+    MY_CLIMBS("Climbs", Icons.Default.Hiking),
+    MY_LISTS("Lists", Icons.Default.Star),
     PROFILE("Profile", Icons.Default.Person)
 }
 
@@ -31,6 +32,8 @@ enum class MainTab(val title: String, val icon: ImageVector) {
 @Composable
 fun MainScreen(
     container: AppContainer,
+    listsViewModel: MountainListsViewModel,
+    climbsListViewModel: ClimbsListViewModel,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToAddCustom: () -> Unit,
     onNavigateToHikeLogDetail: (String) -> Unit,
@@ -43,10 +46,6 @@ fun MainScreen(
     onSignOut: () -> Unit
 ) {
     var selectedTab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(MainTab.MOUNTAINS) }
-
-    val listsViewModel: MountainListsViewModel = viewModel(
-        factory = MountainListsViewModel.Factory(container.mountainListRepository)
-    )
 
     Scaffold(
         containerColor = Color.White,
@@ -98,7 +97,8 @@ fun MainScreen(
                 MainTab.MY_CLIMBS -> ClimbsListScreen(
                     repository = container.mountainRepository,
                     modifier = padding,
-                    onNavigateToDetail = onNavigateToHikeLogDetail
+                    onNavigateToDetail = onNavigateToHikeLogDetail,
+                    vm = climbsListViewModel
                 )
                 MainTab.MY_LISTS -> MountainListsScreen(
                     viewModel = listsViewModel,

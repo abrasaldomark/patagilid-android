@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.devmarkabrasaldo.PataGilid.data.repository.MountainRepository
+import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
 
 data class MountainListsUiState(
     val isLoading: Boolean = false,
@@ -17,12 +19,16 @@ data class MountainListsUiState(
 )
 
 class MountainListsViewModel(
-    private val repository: MountainListRepository
+    private val repository: MountainListRepository,
+    private val mountainRepository: MountainRepository
 ) : ViewModel() {
 
     // MARK: - State
 
     val lists: StateFlow<List<MountainList>> = repository.observeLists()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val allMountains: StateFlow<List<Mountain>> = mountainRepository.allMountainsByName
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _uiState = MutableStateFlow(MountainListsUiState())
@@ -116,9 +122,12 @@ class MountainListsViewModel(
 
     // MARK: - Factory
 
-    class Factory(private val repository: MountainListRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val repository: MountainListRepository,
+        private val mountainRepository: MountainRepository
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            MountainListsViewModel(repository) as T
+            MountainListsViewModel(repository, mountainRepository) as T
     }
 }
