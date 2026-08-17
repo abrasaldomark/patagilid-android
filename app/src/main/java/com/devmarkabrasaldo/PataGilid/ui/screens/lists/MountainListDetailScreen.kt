@@ -388,7 +388,7 @@ private fun ListMountainCard(
 private fun EmptyListDetail(onBrowse: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("This list is empty", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("This list is empty", color = Color(0xFF202124), fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Text(
                 "Open a mountain's detail page and\ntap the Heart icon to add it here.",
                 fontSize = 14.sp,
