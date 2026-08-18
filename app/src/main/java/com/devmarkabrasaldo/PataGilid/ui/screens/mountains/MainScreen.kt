@@ -11,7 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import com.devmarkabrasaldo.PataGilid.R
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devmarkabrasaldo.PataGilid.di.AppContainer
@@ -21,11 +23,11 @@ import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListsViewModel
 import com.devmarkabrasaldo.PataGilid.ui.screens.climbs.ClimbsListViewModel
 import com.devmarkabrasaldo.PataGilid.ui.screens.profile.ProfileScreen
 
-enum class MainTab(val title: String, val icon: ImageVector) {
-    MOUNTAINS("Mountains", Icons.Default.Terrain),
-    MY_CLIMBS("Climbs", Icons.Default.Hiking),
-    MY_LISTS("Lists", Icons.Default.Star),
-    PROFILE("Profile", Icons.Default.Person)
+enum class MainTab(val title: String, val iconVector: ImageVector? = null, val iconRes: Int? = null) {
+    MOUNTAINS("Mountains", iconVector = Icons.Default.Terrain),
+    MY_CLIMBS("Climbs", iconVector = Icons.Default.Hiking),
+    MY_LISTS("Lists", iconRes = R.drawable.ic_custom_list),
+    PROFILE("Profile", iconVector = Icons.Default.Person)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +66,13 @@ fun MainScreen(
                         NavigationBarItem(
                             selected = selected,
                             onClick = { selectedTab = tab },
-                            icon = { Icon(imageVector = tab.icon, contentDescription = tab.title) },
+                            icon = {
+                                if (tab.iconVector != null) {
+                                    Icon(imageVector = tab.iconVector, contentDescription = tab.title)
+                                } else if (tab.iconRes != null) {
+                                    Icon(painter = painterResource(id = tab.iconRes), contentDescription = tab.title)
+                                }
+                            },
                             label = {
                                 Text(
                                     text = tab.title,

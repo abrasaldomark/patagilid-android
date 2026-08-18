@@ -1,0 +1,14 @@
+Refactor swipe-to-reveal interactions and update navigation icons
+
+This commit introduces a custom swipe-to-reveal gesture for the MountainLists items and updates the navigation bar to use a custom icon for the Lists tab.
+
+Swipe-to-Reveal Changes (MountainListsScreen.kt):
+- Replaced the default Material 3 SwipeToDismissBox with a custom pointerInput implementation using detectHorizontalDragGestures and Animatable.
+- The item now partially slides to the left by ~140dp, revealing the "Rename" and "Delete" buttons side-by-side on the right without fully dismissing the item off-screen.
+- Clicking on either the "Rename" or "Delete" button executes the respective action and animates the item back to its resting state.
+- Removed the former 3-dot dropdown menu in favor of the new swipe actions and replaced the icon with a standard right arrow indicator.
+
+Navigation Icon Changes (MainScreen.kt & drawables):
+- Added a new vector drawable resource `ic_custom_list.xml` to replace the default star icon for the Lists tab.
+- Updated `MainTab` enum to support both `ImageVector` and `iconRes` (drawable resources).
+- Modified the bottom NavigationBar in `MainScreen` to conditionally render either the ImageVector or the painterResource based on the tab's configuration.
