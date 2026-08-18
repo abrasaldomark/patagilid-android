@@ -154,9 +154,14 @@ fun PataGilidNavigation(container: AppContainer) {
             AddCustomMountainScreen(
                 container = container,
                 onNavigateBack = { navController.popBackStack() },
-                onMountainAdded = { mountainId ->
+                onMountainAdded = { mountainId, navigateToMountain, openLog ->
                     navController.popBackStack()
-                    navController.navigate(Screen.mountainDetail(mountainId))
+                    if (navigateToMountain) {
+                        navController.navigate(Screen.mountainDetail(mountainId))
+                        if (openLog) {
+                            navController.navigate(Screen.hikeLogCreation(mountainId))
+                        }
+                    }
                 }
             )
         }

@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -73,7 +74,7 @@ private val trailClassOptions = listOf(
 fun AddCustomMountainScreen(
     container: AppContainer,
     onNavigateBack: () -> Unit,
-    onMountainAdded: (String) -> Unit
+    onMountainAdded: (String, Boolean, Boolean) -> Unit
 ) {
     val repository = container.mountainRepository
     val photoUploadService = container.photoUploadService
@@ -89,12 +90,14 @@ fun AddCustomMountainScreen(
     var trailClass by remember { mutableStateOf("Class 1-2") }
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
-    var statusText by remember { mutableStateOf("Saving mountain...") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
     var showRegionDialog by remember { mutableStateOf(false) }
     var showDifficultyDialog by remember { mutableStateOf(false) }
     var showTrailClassDialog by remember { mutableStateOf(false) }
+    
+    var showSubmitBottomSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     var showMapDialog by remember { mutableStateOf(false) }
     var pinnedLocation by remember { mutableStateOf<LatLng?>(null) }
@@ -122,7 +125,7 @@ fun AddCustomMountainScreen(
 
     val isFormValid = name.isNotBlank() && elevation.toIntOrNull() != null && !isSubmitting
 
-    val submitAction: () -> Unit = {
+    val submitAction: (Boolean, Boolean) -> Unit = { navigateToMountain, openLog ->
         val elevInt = elevation.toIntOrNull()
         
         val cleanInputName = name.replace(Regex("(?i)Mt\\.?|Mount"), "").trim()
@@ -140,7 +143,6 @@ fun AddCustomMountainScreen(
             errorMessage = null
             coroutineScope.launch {
                 try {
-                    statusText = "Saving mountain..."
                     val mountainId = repository.submitCustomMountain(
                         name = name.trim(),
                         description = description.trim(),
@@ -153,7 +155,7 @@ fun AddCustomMountainScreen(
                         trailClass = trailClass
                     )
                     isSubmitting = false
-                    onMountainAdded(mountainId)
+                    onMountainAdded(mountainId, navigateToMountain, openLog)
                 } catch (e: Exception) {
                     isSubmitting = false
                     errorMessage = "Submission failed: ${e.localizedMessage}"
@@ -170,7 +172,7 @@ fun AddCustomMountainScreen(
                 navigationIcon = {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color(0xFFE5ECF4),
+                        color = Color.Transparent,
                         modifier = Modifier
                             .padding(start = 12.dp)
                             .height(48.dp)
@@ -193,30 +195,43 @@ fun AddCustomMountainScreen(
                 actions = {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color.White,
+                        color = Color.Transparent,
                         modifier = Modifier
                             .padding(end = 12.dp)
                             .height(48.dp)
                             .clip(RoundedCornerShape(24.dp))
-                            .clickable(enabled = isFormValid && !isSubmitting) { submitAction() }
+                            .clickable(enabled = isFormValid && !isSubmitting) { showSubmitBottomSheet = true }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.padding(horizontal = 18.dp)
                         ) {
-                            if (isSubmitting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = Color(0xFF1A73E8)
-                                )
-                            } else {
-                                Text(
-                                    text = "Submit",
-                                    color = if (isFormValid) Color(0xFF1A73E8) else Color(0xFFB0C4DE),
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                            // Invisible text ensures the Box maintains the exact width of the "Done" text
+                            Text(
+                                text = "Done",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.alpha(0f)
+                            )
+                            
+                            androidx.compose.animation.Crossfade(
+                                targetState = isSubmitting, 
+                                label = "SubmitAnimation"
+                            ) { submitting ->
+                                if (submitting) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color(0xFF1A73E8)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Done",
+                                        color = if (isFormValid) Color(0xFF1A73E8) else Color(0xFFB0C4DE),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
                         }
                     }
@@ -227,6 +242,65 @@ fun AddCustomMountainScreen(
             )
         }
     ) { padding ->
+        if (showSubmitBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showSubmitBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Submit Mountain",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Would you like to just submit this mountain or also record a hike for it?",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Button(
+                        onClick = {
+                            showSubmitBottomSheet = false
+                            submitAction(false, false)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
+                    ) {
+                        Text("Submit", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Button(
+                        onClick = {
+                            showSubmitBottomSheet = false
+                            submitAction(true, true)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5))
+                    ) {
+                        Text("Submit & Add Hike", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+            }
+        }
+    
         Column(
             modifier = Modifier
                 .padding(padding)

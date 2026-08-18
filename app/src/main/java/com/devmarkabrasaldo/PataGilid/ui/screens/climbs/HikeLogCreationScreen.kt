@@ -26,6 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.text.KeyboardOptions
@@ -111,7 +112,7 @@ fun HikeLogCreationScreen(
                 navigationIcon = {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color(0xFFE5ECF4),
+                        color = Color.Transparent,
                         modifier = Modifier
                             .padding(start = 12.dp)
                             .height(48.dp)
@@ -134,8 +135,7 @@ fun HikeLogCreationScreen(
                 actions = {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color.White,
-                        border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
+                        color = Color.Transparent,
                         modifier = Modifier
                             .padding(end = 12.dp)
                             .height(48.dp)
@@ -146,19 +146,32 @@ fun HikeLogCreationScreen(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.padding(horizontal = 18.dp)
                         ) {
-                            if (isSubmitting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = Color(0xFF1A73E8)
-                                )
-                            } else {
-                                Text(
-                                    text = "Save",
-                                    color = Color(0xFF1A73E8),
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                            // Invisible text ensures the Box maintains the exact width of the "Save" text
+                            Text(
+                                text = "Save",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.alpha(0f)
+                            )
+                            
+                            androidx.compose.animation.Crossfade(
+                                targetState = isSubmitting, 
+                                label = "SaveAnimation"
+                            ) { submitting ->
+                                if (submitting) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color(0xFF1A73E8)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Save",
+                                        color = Color(0xFF1A73E8),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
                         }
                     }
