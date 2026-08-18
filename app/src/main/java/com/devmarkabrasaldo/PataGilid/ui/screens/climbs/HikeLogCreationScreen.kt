@@ -106,23 +106,60 @@ fun HikeLogCreationScreen(
         containerColor = Color.White,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text(text = "Log Ascent", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+            CenterAlignedTopAppBar(
+                title = { Text(text = "New Hike", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 17.sp) },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateBack, enabled = !isSubmitting, modifier = Modifier.padding(start = 8.dp)) {
-                        Text("Cancel", color = Color(0xFF3A82F5), fontSize = 16.sp)
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color(0xFFE5ECF4),
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .clickable(enabled = !isSubmitting) { onNavigateBack() }
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.padding(horizontal = 18.dp)
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                color = Color(0xFF1A73E8),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 },
                 actions = {
-                    TextButton(
-                        onClick = { vm.submitHikeLog(onSuccess = onLogSuccess) },
-                        enabled = !isSubmitting,
-                        modifier = Modifier.padding(end = 8.dp)
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE5E7EB)),
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .clickable(enabled = !isSubmitting) { vm.submitHikeLog(onSuccess = onLogSuccess) }
                     ) {
-                        if (isSubmitting) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color(0xFF3A82F5), strokeWidth = 2.dp)
-                        } else {
-                            Text("Save", color = Color(0xFF3A82F5), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.padding(horizontal = 18.dp)
+                        ) {
+                            if (isSubmitting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color(0xFF1A73E8)
+                                )
+                            } else {
+                                Text(
+                                    text = "Save",
+                                    color = Color(0xFF1A73E8),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 },

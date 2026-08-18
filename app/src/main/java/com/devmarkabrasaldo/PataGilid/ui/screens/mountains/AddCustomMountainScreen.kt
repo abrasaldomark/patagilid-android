@@ -165,25 +165,16 @@ fun AddCustomMountainScreen(
     Scaffold(
         containerColor = Color(0xFFF2F4F8),
         topBar = {
-            Surface(
-                color = Color(0xFFF2F4F8),
-                shadowElevation = 0.dp,
-                modifier = Modifier.fillMaxWidth().statusBarsPadding()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Cancel Button Capsule
+            CenterAlignedTopAppBar(
+                title = { Text(text = "Contribute Mountain", color = Color(0xFF1A1A1A), fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(24.dp),
                         color = Color(0xFFE5ECF4),
                         modifier = Modifier
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .padding(start = 12.dp)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(24.dp))
                             .clickable(enabled = !isSubmitting) { onNavigateBack() }
                     ) {
                         Box(
@@ -198,19 +189,42 @@ fun AddCustomMountainScreen(
                             )
                         }
                     }
-
-                    // Title
-                    Text(
-                        text = "Contribute Mountain",
-                        color = Color(0xFF1A1A1A),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // Placeholder to maintain center alignment for title
-                    Box(modifier = Modifier.width(64.dp))
-                }
-            }
+                },
+                actions = {
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.White,
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .clickable(enabled = isFormValid && !isSubmitting) { submitAction() }
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.padding(horizontal = 18.dp)
+                        ) {
+                            if (isSubmitting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color(0xFF1A73E8)
+                                )
+                            } else {
+                                Text(
+                                    text = "Submit",
+                                    color = if (isFormValid) Color(0xFF1A73E8) else Color(0xFFB0C4DE),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color(0xFFF2F4F8)
+                )
+            )
         }
     ) { padding ->
         Column(
@@ -533,29 +547,7 @@ fun AddCustomMountainScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Main Submission Button
-            Button(
-                onClick = submitAction,
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1A73E8),
-                    disabledContainerColor = Color(0xFFB0C4DE)
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                enabled = isFormValid && !isSubmitting
-            ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(statusText, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                } else {
-                    Icon(Icons.Default.Terrain, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Submit mountain for approval", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            }
+
 
             Spacer(modifier = Modifier.height(24.dp))
         }
