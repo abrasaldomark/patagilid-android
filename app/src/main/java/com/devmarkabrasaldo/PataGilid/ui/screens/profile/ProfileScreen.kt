@@ -27,7 +27,7 @@ import com.devmarkabrasaldo.PataGilid.data.repository.MountainRepository
 import kotlinx.coroutines.launch
 
 private val SectionHeaderColor = Color(0xFF8E8E93)       // iOS secondary label for section headers
-private val PageBackground = Color(0xFFF2F2F7)           // iOS grouped list background
+private val PageBackground = Color.White           // iOS grouped list background
 private val CardBackground = Color.White
 private val PrimaryText = Color(0xFF1C1C1E)               // iOS primary label
 private val SecondaryText = Color(0xFF8E8E93)              // iOS secondary label

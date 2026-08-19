@@ -109,9 +109,9 @@ fun AddCustomMountainScreen(
     val allMountains by repository.allMountainsByName.collectAsState(initial = emptyList())
     
     // Fetch and populate for Edit Mode
-    LaunchedEffect(mountainId, allMountains) {
-        if (mountainId != null && allMountains.isNotEmpty()) {
-            val mountain = allMountains.find { it.id == mountainId }
+    LaunchedEffect(mountainId) {
+        if (mountainId != null) {
+            val mountain = repository.getMountain(mountainId)
             if (mountain != null) {
                 name = mountain.name
                 elevation = mountain.elevationMASL.toString()

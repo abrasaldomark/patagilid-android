@@ -50,9 +50,10 @@ fun AdminModerationQueueScreen(
     val context = LocalContext.current
 
     val unapprovedPeaks by repository.unapprovedMountains.collectAsState(initial = emptyList())
-    var pendingCoordinateSubmissions by remember { mutableStateOf<List<CoordinateSubmission>>(emptyList()) }
+    val pendingCoordinateSubmissions by repository.getPendingCoordinateSubmissionsFlow().collectAsState(initial = emptyList())
+    
     LaunchedEffect(Unit) {
-        pendingCoordinateSubmissions = repository.getPendingCoordinateSubmissions()
+        repository.syncPendingCoordinateSubmissions()
     }
     val allPublicPeaks by repository.allMountainsByName.collectAsState(initial = emptyList())
 
@@ -124,7 +125,7 @@ fun AdminModerationQueueScreen(
                         try {
                             repository.applyAdjustedGpsCalibration(submission.id, peak.id, lat, lng, submission.region)
                             actionFeedback = "✅ Adjusted GPS coordinates approved & broadcasted nationwide!"
-                            pendingCoordinateSubmissions = repository.getPendingCoordinateSubmissions()
+                            repository.syncPendingCoordinateSubmissions()
                         } catch (e: Exception) {
                             actionFeedback = "⚠️ Failed to approve GPS: ${e.localizedMessage}"
                         }
@@ -293,7 +294,7 @@ fun AdminModerationQueueScreen(
                                                     try {
                                                         repository.declineGPS(submission.id, peak.id)
                                                         actionFeedback = "🗑️ GPS submission rejected."
-                                                        pendingCoordinateSubmissions = repository.getPendingCoordinateSubmissions()
+                                                        repository.syncPendingCoordinateSubmissions()
                                                     } catch (e: Exception) {
                                                         actionFeedback = "⚠️ Failed to reject GPS: ${e.localizedMessage}"
                                                     }
@@ -306,7 +307,7 @@ fun AdminModerationQueueScreen(
                                                     try {
                                                         repository.applyGpsCalibration(submission.id, peak.id, submission.latitude, submission.longitude, submission.region)
                                                         actionFeedback = "✅ GPS coordinates for '${peak.name}' approved & broadcasted nationwide via Delta-Sync!"
-                                                        pendingCoordinateSubmissions = repository.getPendingCoordinateSubmissions()
+                                                        repository.syncPendingCoordinateSubmissions()
                                                     } catch (e: Exception) {
                                                         actionFeedback = "⚠️ Failed to approve GPS: ${e.localizedMessage}"
                                                     }

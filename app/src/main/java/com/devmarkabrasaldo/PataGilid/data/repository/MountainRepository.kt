@@ -17,10 +17,12 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 import com.devmarkabrasaldo.PataGilid.data.local.HikeLogDao
+import com.devmarkabrasaldo.PataGilid.data.local.CoordinateSubmissionDao
 
 class MountainRepository(
     private val mountainDao: MountainDao,
     private val hikeLogDao: HikeLogDao,
+    private val coordinateSubmissionDao: CoordinateSubmissionDao,
     private val syncService: MountainSyncService
 ) {
     private val db = FirebaseFirestore.getInstance()
@@ -107,12 +109,23 @@ class MountainRepository(
         synchronize()
     }
 
-    suspend fun getPendingCoordinateSubmissions(): List<CoordinateSubmission> = withContext(Dispatchers.IO) {
-        val snapshot = db.collection("coordinate_submissions")
-            .whereEqualTo("status", "PENDING")
-            .get()
-            .await()
-        snapshot.documents.mapNotNull { it.toCoordinateSubmissionSafely() }
+    fun getPendingCoordinateSubmissionsFlow(): Flow<List<CoordinateSubmission>> {
+        return coordinateSubmissionDao.getPendingSubmissions()
+    }
+
+    suspend fun syncPendingCoordinateSubmissions() = withContext(Dispatchers.IO) {
+        try {
+            val snapshot = db.collection("coordinate_submissions")
+                .whereEqualTo("status", "PENDING")
+                .get()
+                .await()
+            val remoteList = snapshot.documents.mapNotNull { it.toCoordinateSubmissionSafely() }
+            
+            coordinateSubmissionDao.clearSubmissions()
+            coordinateSubmissionDao.insertSubmissions(remoteList)
+        } catch (e: Exception) {
+            Log.e("MountainRepository", "Error syncing pending GPS submissions", e)
+        }
     }
 
     suspend fun deleteCoordinateSubmission(submissionId: String) = withContext(Dispatchers.IO) {

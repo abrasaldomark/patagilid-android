@@ -8,14 +8,16 @@ import androidx.room.TypeConverters
 import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
 import com.devmarkabrasaldo.PataGilid.domain.models.MountainList
 import com.devmarkabrasaldo.PataGilid.domain.models.HikeLog
+import com.devmarkabrasaldo.PataGilid.domain.models.CoordinateSubmission
 
-@Database(entities = [Mountain::class, MountainList::class, HikeLog::class], version = 5, exportSchema = false)
+@Database(entities = [Mountain::class, MountainList::class, HikeLog::class, CoordinateSubmission::class], version = 6, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class PataGilidDatabase : RoomDatabase() {
 
     abstract fun mountainDao(): MountainDao
     abstract fun mountainListDao(): MountainListDao
     abstract fun hikeLogDao(): HikeLogDao
+    abstract fun coordinateSubmissionDao(): CoordinateSubmissionDao
 
     companion object {
         @Volatile

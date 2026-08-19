@@ -37,8 +37,8 @@ class MountainsViewModel(private val repository: MountainRepository) : ViewModel
         .stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
     fun userPendingMountains(email: String): Flow<List<Mountain>> {
-        return allMountains.map { list ->
-            list.filter { !it.isPubliclyApproved && it.contributorEmail == email }
+        return repository.unapprovedMountains.map { list ->
+            list.filter { it.contributorEmail == email }
         }
     }
 

@@ -14,7 +14,7 @@ class AppContainer(val context: Context) {
     val authRepository: AuthRepository by lazy { AuthRepository(context) }
     val database: PataGilidDatabase by lazy { PataGilidDatabase.getDatabase(context) }
     val syncService: MountainSyncService by lazy { MountainSyncService(database.mountainDao()) }
-    val mountainRepository: MountainRepository by lazy { MountainRepository(database.mountainDao(), database.hikeLogDao(), syncService) }
+    val mountainRepository: MountainRepository by lazy { MountainRepository(database.mountainDao(), database.hikeLogDao(), database.coordinateSubmissionDao(), syncService) }
     val mountainListRepository: MountainListRepository by lazy { MountainListRepository(database.mountainListDao()) }
     val googleDriveService: GoogleDriveService by lazy { GoogleDriveService(authRepository) }
     val photoUploadService: PhotoUploadService by lazy { PhotoUploadService(context, googleDriveService) }
