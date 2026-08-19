@@ -104,11 +104,11 @@ fun HikeLogCreationScreen(
     val endTimeStr = timeFormat.format(Date(vm.endDate.value))
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = "New Hike", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+                title = { Text(text = "New Hike", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 17.sp) },
                 navigationIcon = {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
@@ -176,7 +176,7 @@ fun HikeLogCreationScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         }
     ) { padding ->
@@ -219,7 +219,7 @@ fun HikeLogCreationScreen(
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(mountain?.name ?: "Peak", color = Color.Black, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(mountain?.name ?: "Peak", color = MaterialTheme.colorScheme.onBackground, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                         Text("${mountain?.elevationMASL ?: 0} MASL", color = Color(0xFF94A3B8), fontSize = 13.sp)
                         Text(mountain?.region ?: "", color = Color(0xFF94A3B8), fontSize = 13.sp)
                     }
@@ -228,7 +228,7 @@ fun HikeLogCreationScreen(
 
             // Climb Duration
             Column {
-                Text("Climb Duration", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text("Climb Duration", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -239,13 +239,13 @@ fun HikeLogCreationScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         // Start Date
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("Start", color = Color.Black, fontSize = 16.sp)
+                            Text("Start", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFFF3F4F6)) {
-                                    Text(startDateStr, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = Color.Black, fontSize = 14.sp)
+                                    Text(startDateStr, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onBackground, fontSize = 14.sp)
                                 }
                                 Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFFF3F4F6)) {
-                                    Text(startTimeStr, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = Color.Black, fontSize = 14.sp)
+                                    Text(startTimeStr, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onBackground, fontSize = 14.sp)
                                 }
                             }
                         }
@@ -254,13 +254,13 @@ fun HikeLogCreationScreen(
                         
                         // End Date
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("End", color = Color.Black, fontSize = 16.sp)
+                            Text("End", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFFF3F4F6)) {
-                                    Text(endDateStr, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = Color.Black, fontSize = 14.sp)
+                                    Text(endDateStr, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onBackground, fontSize = 14.sp)
                                 }
                                 Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFFF3F4F6)) {
-                                    Text(endTimeStr, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = Color.Black, fontSize = 14.sp)
+                                    Text(endTimeStr, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onBackground, fontSize = 14.sp)
                                 }
                             }
                         }
@@ -270,7 +270,7 @@ fun HikeLogCreationScreen(
 
             // Trail Details
             Column {
-                Text("Trail Details", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text("Trail Details", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Surface(
@@ -366,7 +366,7 @@ fun HikeLogCreationScreen(
                                 BasicTextField(
                                     value = trailName,
                                     onValueChange = { vm.trailName.value = it },
-                                    textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+                                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp),
                                     cursorBrush = SolidColor(Color(0xFF3B82F6)),
                                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -391,7 +391,7 @@ fun HikeLogCreationScreen(
                                     BasicTextField(
                                         value = exitTrailName,
                                         onValueChange = { vm.exitTrailName.value = it },
-                                        textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+                                        textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp),
                                         cursorBrush = SolidColor(Color(0xFF3B82F6)),
                                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -444,7 +444,7 @@ fun HikeLogCreationScreen(
                                             BasicTextField(
                                                 value = waypoint,
                                                 onValueChange = { vm.updateWaypoint(index, it) },
-                                                textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+                                                textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp),
                                                 cursorBrush = SolidColor(Color(0xFF3B82F6)),
                                                 modifier = Modifier.weight(1f),
                                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -473,7 +473,7 @@ fun HikeLogCreationScreen(
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text("Experienced Difficulty", color = Color(0xFF9CA3AF), fontSize = 13.sp)
-                                Text(mountain?.difficultyLevel ?: "N/A", color = Color.Black, fontSize = 16.sp)
+                                Text(mountain?.difficultyLevel ?: "N/A", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                             }
                         }
                         
@@ -485,7 +485,7 @@ fun HikeLogCreationScreen(
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text("Technical Trail Class", color = Color(0xFF9CA3AF), fontSize = 13.sp)
-                                Text(mountain?.trailClass ?: "N/A", color = Color.Black, fontSize = 16.sp)
+                                Text(mountain?.trailClass ?: "N/A", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                             }
                         }
                     }
@@ -494,7 +494,7 @@ fun HikeLogCreationScreen(
 
             // Climb Outcome
             Column {
-                Text("Climb Outcome", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text("Climb Outcome", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -554,7 +554,7 @@ fun HikeLogCreationScreen(
 
             // Climb Notes
             Column {
-                Text("Climb Notes", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text("Climb Notes", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Surface(
@@ -588,7 +588,7 @@ fun HikeLogCreationScreen(
                                         Text(
                                             text = chip,
                                             fontSize = 12.sp,
-                                            color = Color.Black,
+                                            color = MaterialTheme.colorScheme.onBackground,
                                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                                         )
                                     }
@@ -610,7 +610,7 @@ fun HikeLogCreationScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 100.dp),
-                            textStyle = TextStyle(color = Color.Black, fontSize = 15.sp),
+                            textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = Color(0xFFE5E7EB),
                                 unfocusedBorderColor = Color(0xFFE5E7EB),
@@ -625,7 +625,7 @@ fun HikeLogCreationScreen(
 
             // Climb Photos
             Column {
-                Text("Climb Photos", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text("Climb Photos", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Surface(

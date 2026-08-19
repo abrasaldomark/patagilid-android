@@ -112,11 +112,11 @@ fun MountainDetailScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { 
-                    Text(mountain?.name ?: "", fontWeight = FontWeight.Bold, color = Color.Black) 
+                    Text(mountain?.name ?: "", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) 
                 },
                 navigationIcon = {
                     IconButton(
@@ -162,7 +162,7 @@ fun MountainDetailScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         }
@@ -297,7 +297,7 @@ fun MountainDetailScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Specs
-            Text("Mountain Details", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+            Text("Mountain Details", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(12.dp))
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -338,7 +338,7 @@ fun MountainDetailScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Coordinates", color = SummitSteel, fontSize = 12.sp)
-                            Text("${peak.latitude}, ${peak.longitude}", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text("${peak.latitude}, ${peak.longitude}", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         }
                         Surface(shape = CircleShape, color = GliderBlue, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.CallMade, contentDescription = null, tint = Color.White, modifier = Modifier.padding(6.dp))
@@ -359,11 +359,11 @@ fun MountainDetailScreen(
                         ) {
                             Icon(Icons.Default.Verified, contentDescription = null, tint = GliderBlue, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("GPS Verified by ${peak.communityVerifications} Explorer${if (peak.communityVerifications == 1) "" else "s"}", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("GPS Verified by ${peak.communityVerifications} Explorer${if (peak.communityVerifications == 1) "" else "s"}", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
-            } else if (peak.pendingLatitude != null && peak.pendingLongitude != null) {
+            } else if (peak.pendingCalibrationsCount > 0) {
                 Spacer(modifier = Modifier.height(12.dp))
                 // Pending Calibration Banner
                 Surface(
@@ -377,42 +377,9 @@ fun MountainDetailScreen(
                             Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Color(0xFFF57C00), modifier = Modifier.size(28.dp).padding(top = 2.dp))
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
-                                Text("GPS Calibration Pending", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 15.sp)
+                                Text("GPS Calibration Pending", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp)
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("A summit location has been submitted for this mountain and is currently awaiting admin verification.", color = Color(0xFF6B7280), fontSize = 13.sp, lineHeight = 18.sp)
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        val isSubmitter = container.authRepository.currentUser.value?.email == peak.pendingContributorEmail
-                        val pillText = if (isAdmin) {
-                            "Approve Pending Review"
-                        } else if (isSubmitter) {
-                            "Submitted by You • Pending Review"
-                        } else {
-                            "Submitted by ${peak.displayPendingContributorName ?: "Explorer"} • Pending Review"
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFFEBE5DF),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .clickable(enabled = isAdmin) {
-                                    if (isAdmin) {
-                                        coroutineScope.launch { container.mountainRepository.applyGpsCalibration(mountainId) }
-                                    }
-                                }
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Outlined.HourglassEmpty, contentDescription = null, tint = Color(0xFF6B7280), modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(pillText, color = Color(0xFF6B7280), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("${peak.pendingCalibrationsCount} summit location(s) have been submitted for this mountain and are currently awaiting admin verification.", color = Color(0xFF6B7280), fontSize = 13.sp, lineHeight = 18.sp)
                             }
                         }
                     }
@@ -432,7 +399,7 @@ fun MountainDetailScreen(
                             Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF3B82F6), modifier = Modifier.size(28.dp).padding(top = 2.dp))
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
-                                Text("Help Map This Summit", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 15.sp)
+                                Text("Help Map This Summit", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text("Be the first hiker to pin this mountain! Locate its summit directly on the map to help complete our mountain list.", color = Color(0xFF6B7280), fontSize = 13.sp, lineHeight = 18.sp)
                             }
@@ -455,7 +422,7 @@ fun MountainDetailScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Mountain Overview
-            Text("Mountain Overview", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+            Text("Mountain Overview", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(12.dp))
             Surface(
                 shape = RoundedCornerShape(12.dp),
@@ -474,7 +441,7 @@ fun MountainDetailScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Mountain Photography
-            Text("Mountain Photography", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+            Text("Mountain Photography", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(12.dp))
             
             Surface(
@@ -488,7 +455,7 @@ fun MountainDetailScreen(
                         Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = GliderBlue, modifier = Modifier.size(24.dp).padding(top = 2.dp))
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text(if (personalPhotoUrl == null) "Add Personal Cover Photo" else "Personal Cover Photo Set", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 15.sp)
+                            Text(if (personalPhotoUrl == null) "Add Personal Cover Photo" else "Personal Cover Photo Set", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp)
                             Text("Set a private cover photo for this mountain. This image is visible only on your account.", color = SummitSteel, fontSize = 12.sp, lineHeight = 16.sp)
                         }
                     }
@@ -542,7 +509,7 @@ fun MountainDetailScreen(
                                 }
                                 
                                 Spacer(modifier = Modifier.weight(1f))
-                                Text("Contribute GPS", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black, modifier = Modifier.padding(end = 40.dp))
+                                Text("Contribute GPS", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(end = 40.dp))
                                 Spacer(modifier = Modifier.weight(1f))
                             }
                             
@@ -559,10 +526,10 @@ fun MountainDetailScreen(
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Text("Mountain Name", color = Color(0xFF9CA3AF), fontSize = 16.sp)
-                                        Text(peak.name, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                        Text(peak.name, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                     }
                                     Divider(color = Color(0xFFF3F4F6), modifier = Modifier.padding(vertical = 12.dp))
-                                    Text("Region / Province", color = Color.Black, fontSize = 16.sp)
+                                    Text("Region / Province", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(peak.region, color = Color(0xFF3B82F6), fontSize = 15.sp)
@@ -611,7 +578,7 @@ fun MountainDetailScreen(
                                         } else {
                                             Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(20.dp))
                                             Spacer(modifier = Modifier.width(12.dp))
-                                            Text(String.format("Pinned at: %.5f, %.5f", pinnedLocation!!.latitude, pinnedLocation!!.longitude), color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                            Text(String.format("Pinned at: %.5f, %.5f", pinnedLocation!!.latitude, pinnedLocation!!.longitude), color = MaterialTheme.colorScheme.onBackground, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }
@@ -675,7 +642,7 @@ fun MountainDetailScreen(
             ModalBottomSheet(
                 onDismissRequest = { showCoordinatesBottomSheet = false },
                 sheetState = sheetState,
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.background
             ) {
                 Column(
                     modifier = Modifier
@@ -687,12 +654,12 @@ fun MountainDetailScreen(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Divider(color = Color.LightGray.copy(alpha = 0.5f))
                     
                     ListItem(
-                        headlineContent = { Text("Copy Coordinates to Clipboard", fontSize = 16.sp, color = Color.Black) },
+                        headlineContent = { Text("Copy Coordinates to Clipboard", fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground) },
                         leadingContent = { Icon(Icons.Default.ContentCopy, contentDescription = null, tint = GliderBlue) },
                         modifier = Modifier.clickable {
                             val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -701,11 +668,11 @@ fun MountainDetailScreen(
                             android.widget.Toast.makeText(context, "Coordinates Copied!", android.widget.Toast.LENGTH_SHORT).show()
                             showCoordinatesBottomSheet = false
                         },
-                        colors = ListItemDefaults.colors(containerColor = Color.White)
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
                     )
                     
                     ListItem(
-                        headlineContent = { Text("View on Map", fontSize = 16.sp, color = Color.Black) },
+                        headlineContent = { Text("View on Map", fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground) },
                         leadingContent = { Icon(Icons.Default.Map, contentDescription = null, tint = GliderBlue) },
                         modifier = Modifier.clickable {
                             val gmmIntentUri = Uri.parse("geo:${peak.latitude},${peak.longitude}?q=${peak.latitude},${peak.longitude}(${peak.name})")
@@ -728,7 +695,7 @@ fun MountainDetailScreen(
                             }
                             showCoordinatesBottomSheet = false
                         },
-                        colors = ListItemDefaults.colors(containerColor = Color.White)
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
                     )
                 }
             }
@@ -762,7 +729,7 @@ fun SpecCard(modifier: Modifier = Modifier, title: String, value: String, icon: 
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(title, color = SummitSteel, fontSize = 12.sp)
-                Text(value, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(value, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
     }
@@ -782,7 +749,7 @@ fun SaveToListBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) {
         Column(
             modifier = Modifier
@@ -794,7 +761,7 @@ fun SaveToListBottomSheet(
                 "Save to List",
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
             )
 
@@ -817,7 +784,7 @@ fun SaveToListBottomSheet(
                 lists.forEach { list ->
                     val isInList = list.mountainIds.contains(mountainId)
                     ListItem(
-                        headlineContent = { Text(list.name, fontWeight = FontWeight.Medium, color = Color.Black) },
+                        headlineContent = { Text(list.name, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onBackground) },
                         supportingContent = {
                             Text(
                                 if (list.mountainCount == 1) "1 mountain" else "${list.mountainCount} mountains",
@@ -844,7 +811,7 @@ fun SaveToListBottomSheet(
                         modifier = Modifier.clickable {
                             if (isInList) onRemove(list.id) else onAdd(list.id)
                         },
-                        colors = ListItemDefaults.colors(containerColor = Color.White)
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background)
                     )
                     Divider(color = Color(0xFFF1F3F4), thickness = 0.5.dp, modifier = Modifier.padding(start = 72.dp))
                 }

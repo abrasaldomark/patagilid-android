@@ -32,12 +32,9 @@ class MountainsViewModel(private val repository: MountainRepository) : ViewModel
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
-    val pendingReviewsCount: StateFlow<Int> = combine(
-        repository.unapprovedMountains,
-        repository.pendingGpsMountains
-    ) { unapproved, pendingGps ->
-        unapproved.size + pendingGps.size
-    }.stateIn(viewModelScope, SharingStarted.Lazily, 0)
+    val pendingReviewsCount: StateFlow<Int> = repository.unapprovedMountains
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
     fun userPendingMountains(email: String): Flow<List<Mountain>> {
         return allMountains.map { list ->
@@ -45,9 +42,36 @@ class MountainsViewModel(private val repository: MountainRepository) : ViewModel
         }
     }
 
-    fun userPendingGps(email: String): Flow<List<Mountain>> {
-        return allMountains.map { list ->
-            list.filter { it.pendingContributorEmail == email }
+    fun deleteCoordinateSubmission(submissionId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.deleteCoordinateSubmission(submissionId)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
+    }
+
+    fun updateCoordinateSubmission(submissionId: String, lat: Double, lon: Double, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.updateCoordinateSubmission(submissionId, lat, lon)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
+    }
+
+    fun deletePendingMountain(mountainId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.deleteMountain(mountainId)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e)
+            }
         }
     }
 

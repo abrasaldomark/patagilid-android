@@ -30,7 +30,7 @@ object Screen {
     const val LOGIN = "login"
     const val MAIN = "main"
     const val MOUNTAIN_DETAIL = "mountain_detail/{mountainId}"
-    const val ADD_CUSTOM_MOUNTAIN = "add_custom_mountain"
+    const val ADD_CUSTOM_MOUNTAIN = "add_custom_mountain?mountainId={mountainId}"
     const val HIKE_LOG_CREATION = "hike_log_creation/{mountainId}"
     const val SUMMIT_LOG_DETAIL = "summit_log_detail/{logId}"
     const val PHOTO_GALLERY = "photo_gallery/{startIndex}?urls={urls}"
@@ -48,6 +48,9 @@ object Screen {
     fun photoGallery(startIndex: Int, urls: List<String>): String {
         val encodedUrls = java.net.URLEncoder.encode(urls.joinToString("||"), "UTF-8")
         return "photo_gallery/$startIndex?urls=$encodedUrls"
+    }
+    fun addCustomMountain(mountainId: String? = null): String {
+        return if (mountainId != null) "add_custom_mountain?mountainId=$mountainId" else "add_custom_mountain"
     }
 }
 
@@ -127,7 +130,9 @@ fun PataGilidNavigation(container: AppContainer) {
             com.devmarkabrasaldo.PataGilid.ui.screens.profile.UserContributionsScreen(
                 mountainRepository = container.mountainRepository,
                 authRepository = container.authRepository,
-                onNavigateBack = { navController.navigateUp() }
+                onNavigateBack = { navController.navigateUp() },
+                onEditMountain = { mountainId -> navController.navigate(Screen.addCustomMountain(mountainId)) },
+                onViewMountain = { mountainId -> navController.navigate(Screen.mountainDetail(mountainId)) }
             )
         }
 
@@ -150,16 +155,21 @@ fun PataGilidNavigation(container: AppContainer) {
             )
         }
 
-        composable(Screen.ADD_CUSTOM_MOUNTAIN) {
+        composable(
+            route = Screen.ADD_CUSTOM_MOUNTAIN,
+            arguments = listOf(navArgument("mountainId") { nullable = true; type = NavType.StringType })
+        ) { navBackStackEntry ->
+            val mountainId = navBackStackEntry.arguments?.getString("mountainId")
             AddCustomMountainScreen(
+                mountainId = mountainId,
                 container = container,
                 onNavigateBack = { navController.popBackStack() },
-                onMountainAdded = { mountainId, navigateToMountain, openLog ->
+                onMountainAdded = { newMountainId, navigateToMountain, openLog ->
                     navController.popBackStack()
                     if (navigateToMountain) {
-                        navController.navigate(Screen.mountainDetail(mountainId))
+                        navController.navigate(Screen.mountainDetail(newMountainId))
                         if (openLog) {
-                            navController.navigate(Screen.hikeLogCreation(mountainId))
+                            navController.navigate(Screen.hikeLogCreation(newMountainId))
                         }
                     }
                 }

@@ -235,7 +235,7 @@ fun MountainListsScreen(
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.background,
             titleContentColor = Color.Black,
             textContentColor = Color(0xFF202124),
             title = { Text("Delete \"${target.name}\"?") },
@@ -475,7 +475,7 @@ private fun ListNameDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         titleContentColor = Color.Black,
         textContentColor = Color.Black,
         title = { Text(title, fontWeight = FontWeight.Bold) },

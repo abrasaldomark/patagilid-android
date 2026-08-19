@@ -50,14 +50,14 @@ fun MainScreen(
     var selectedTab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(MainTab.MOUNTAINS) }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Surface(
                 shadowElevation = 8.dp,
                 color = Color.White
             ) {
                 NavigationBar(
-                    containerColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.background,
                     contentColor = Color(0xFF1A73E8),
                     tonalElevation = 0.dp
                 ) {

@@ -137,7 +137,7 @@ fun ClimbsListScreen(
                     focusManager.clearFocus()
                 })
             },
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Column(
                 modifier = Modifier
@@ -312,7 +312,7 @@ fun ClimbsListScreen(
                             Spacer(modifier = Modifier.height(24.dp))
                             Text(
                                 text = "Akyat na!",
-                                color = Color.Black,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 22.sp
                             )

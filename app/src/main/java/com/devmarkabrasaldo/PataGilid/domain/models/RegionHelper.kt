@@ -82,14 +82,15 @@ object RegionHelper {
     }
 
     fun mapToInternalRegion(adminArea: String, subAdminArea: String, locality: String): Pair<String?, IslandGroup?> {
-        val areas = listOf(adminArea, subAdminArea, locality).filter { it.isNotBlank() }
-        for (area in areas) {
-            val result = checkRegion(area.lowercase())
-            if (result.first != null) return result
+        val primarySearchString = "$adminArea $subAdminArea".lowercase()
+        val fallbackSearchString = "$adminArea $subAdminArea $locality".lowercase()
+        
+        val primaryResult = checkRegion(primarySearchString)
+        if (primaryResult.first != null) {
+            return primaryResult
         }
-        // Fallback to combined string if individual parts fail
-        val searchString = "$adminArea $subAdminArea $locality".lowercase()
-        return checkRegion(searchString)
+        
+        return checkRegion(fallbackSearchString)
     }
 
     private fun checkRegion(searchString: String): Pair<String?, IslandGroup?> {

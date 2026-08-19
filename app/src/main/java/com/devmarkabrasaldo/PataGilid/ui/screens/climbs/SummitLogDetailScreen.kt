@@ -133,7 +133,7 @@ fun SummitLogDetailScreen(
         containerColor = PageBackground,
         topBar = {
             TopAppBar(
-                title = { Text(mountain?.name ?: "", color = Color.Black, fontWeight = FontWeight.Bold) },
+                title = { Text(mountain?.name ?: "", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     Surface(
                         shape = CircleShape,
@@ -176,7 +176,7 @@ fun SummitLogDetailScreen(
             }
         } else if (log == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Summit log not found or deleted.", color = Color.Black)
+                Text("Summit log not found or deleted.", color = MaterialTheme.colorScheme.onBackground)
             }
         } else {
             val hikeLog = log ?: return@Scaffold
@@ -401,7 +401,7 @@ fun SummitLogDetailScreen(
                     ) {
                         Text(
                             text = hikeLog.climbNotes,
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.onBackground,
                             fontSize = 16.sp,
                             modifier = Modifier.padding(16.dp)
                         )

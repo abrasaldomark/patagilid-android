@@ -4,6 +4,7 @@ import android.util.Log
 import com.devmarkabrasaldo.PataGilid.domain.models.HikeLog
 import com.devmarkabrasaldo.PataGilid.domain.models.IslandGroup
 import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
+import com.devmarkabrasaldo.PataGilid.domain.models.CoordinateSubmission
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import java.util.Date
@@ -97,19 +98,7 @@ fun DocumentSnapshot.toMountainSafely(): Mountain? {
             else -> null
         }
 
-        val pendingLatVal = get("pendingLatitude")
-        val pLat = when (pendingLatVal) {
-            is Number -> pendingLatVal.toDouble()
-            is String -> pendingLatVal.toDoubleOrNull()
-            else -> null
-        }
-
-        val pendingLonVal = get("pendingLongitude")
-        val pLon = when (pendingLonVal) {
-            is Number -> pendingLonVal.toDouble()
-            is String -> pendingLonVal.toDoubleOrNull()
-            else -> null
-        }
+        val pendingCount = getLong("pendingCalibrationsCount")?.toInt() ?: 0
 
         Mountain(
             id = getString("id") ?: id,
@@ -126,13 +115,7 @@ fun DocumentSnapshot.toMountainSafely(): Mountain? {
             contributorId = getString("contributorId"),
             contributorEmail = getString("contributorEmail"),
             contributorName = getString("contributorName"),
-            pendingLatitude = pLat,
-            pendingLongitude = pLon,
-            pendingRegion = getString("pendingRegion"),
-            pendingContributorEmail = getString("pendingContributorEmail"),
-            pendingContributorName = getString("pendingContributorName"),
-            pendingVerifications = getLong("pendingVerifications")?.toInt() ?: 0,
-            pendingVerifierEmails = verifiers,
+            pendingCalibrationsCount = pendingCount,
             updatedAt = updatedMillis,
             isVerifiedByCommunity = getBoolean("isVerifiedByCommunity") ?: false,
             communityVerifications = getLong("communityVerifications")?.toInt() ?: 0
@@ -159,15 +142,65 @@ fun Mountain.toFirestoreMap(): Map<String, Any?> {
         "contributorId" to contributorId,
         "contributorEmail" to contributorEmail,
         "contributorName" to contributorName,
-        "pendingLatitude" to pendingLatitude,
-        "pendingLongitude" to pendingLongitude,
-        "pendingRegion" to pendingRegion,
-        "pendingContributorEmail" to pendingContributorEmail,
-        "pendingContributorName" to pendingContributorName,
-        "pendingVerifications" to pendingVerifications,
-        "pendingVerifierEmails" to pendingVerifierEmails,
+        "pendingCalibrationsCount" to pendingCalibrationsCount,
         "updatedAt" to Timestamp(Date(updatedAt)),
         "isVerifiedByCommunity" to isVerifiedByCommunity,
         "communityVerifications" to communityVerifications
+    )
+}
+
+fun DocumentSnapshot.toCoordinateSubmissionSafely(): CoordinateSubmission? {
+    return try {
+        val submittedVal = get("submittedAt")
+        val submittedMillis = when (submittedVal) {
+            is Timestamp -> submittedVal.toDate().time
+            is Date -> submittedVal.time
+            is Number -> submittedVal.toLong()
+            is String -> submittedVal.toLongOrNull() ?: System.currentTimeMillis()
+            else -> System.currentTimeMillis()
+        }
+
+        val latVal = get("latitude")
+        val lat = when (latVal) {
+            is Number -> latVal.toDouble()
+            is String -> latVal.toDoubleOrNull()
+            else -> 0.0
+        }
+
+        val lonVal = get("longitude")
+        val lon = when (lonVal) {
+            is Number -> lonVal.toDouble()
+            is String -> lonVal.toDoubleOrNull()
+            else -> 0.0
+        }
+
+        CoordinateSubmission(
+            id = getString("id") ?: id,
+            mountainId = getString("mountainId") ?: "",
+            latitude = lat ?: 0.0,
+            longitude = lon ?: 0.0,
+            region = getString("region") ?: "",
+            contributorEmail = getString("contributorEmail") ?: "",
+            contributorName = getString("contributorName") ?: "",
+            submittedAt = submittedMillis,
+            status = getString("status") ?: "PENDING"
+        )
+    } catch (e: Exception) {
+        Log.e("FirestoreExtensions", "Error safe-parsing CoordinateSubmission for doc $id: ${e.localizedMessage}", e)
+        null
+    }
+}
+
+fun CoordinateSubmission.toFirestoreMap(): Map<String, Any?> {
+    return hashMapOf(
+        "id" to id,
+        "mountainId" to mountainId,
+        "latitude" to latitude,
+        "longitude" to longitude,
+        "region" to region,
+        "contributorEmail" to contributorEmail,
+        "contributorName" to contributorName,
+        "submittedAt" to Timestamp(Date(submittedAt)),
+        "status" to status
     )
 }

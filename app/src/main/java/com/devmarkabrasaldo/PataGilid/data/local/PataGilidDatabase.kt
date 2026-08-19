@@ -9,7 +9,7 @@ import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
 import com.devmarkabrasaldo.PataGilid.domain.models.MountainList
 import com.devmarkabrasaldo.PataGilid.domain.models.HikeLog
 
-@Database(entities = [Mountain::class, MountainList::class, HikeLog::class], version = 4, exportSchema = false)
+@Database(entities = [Mountain::class, MountainList::class, HikeLog::class], version = 5, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class PataGilidDatabase : RoomDatabase() {
 

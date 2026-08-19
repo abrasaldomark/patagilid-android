@@ -21,8 +21,7 @@ interface MountainDao {
     @Query("SELECT * FROM mountains WHERE isApproved = 0")
     fun getPendingApprovalMountains(): Flow<List<Mountain>>
 
-    @Query("SELECT * FROM mountains WHERE pendingLatitude IS NOT NULL AND (isApproved != 0 OR isApproved IS NULL)")
-    fun getPendingGpsMountains(): Flow<List<Mountain>>
+
 
     @Query("SELECT * FROM mountains WHERE id = :id")
     suspend fun getMountainById(id: String): Mountain?

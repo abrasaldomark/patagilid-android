@@ -1,5 +1,7 @@
 package com.devmarkabrasaldo.PataGilid.ui.screens.mountains
 
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
@@ -173,6 +175,29 @@ fun MapCalibrationDialog(
                         onMapClick = { latLng ->
                             pinnedLocation = latLng
                             selectedPlaceName = null
+                            
+                            // Reverse geocode to get island group and region
+                            coroutineScope.launch {
+                                try {
+                                    val geocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
+                                    val addresses = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+                                    }
+                                    if (!addresses.isNullOrEmpty()) {
+                                        val address = addresses[0]
+                                        val (fetchedRegion, islandGroup) = com.devmarkabrasaldo.PataGilid.domain.models.RegionHelper.mapToInternalRegion(
+                                            address.adminArea ?: "",
+                                            address.subAdminArea ?: "",
+                                            address.locality ?: ""
+                                        )
+                                        if (fetchedRegion != null) {
+                                            selectedPlaceName = "${islandGroup?.name ?: ""}, $fetchedRegion"
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    // Ignore reverse geocoding errors
+                                }
+                            }
                         }
                     ) {
                         pinnedLocation?.let { loc ->
@@ -211,7 +236,7 @@ fun MapCalibrationDialog(
                                 "Pin Summit Location", 
                                 fontWeight = FontWeight.Bold, 
                                 fontSize = 18.sp, 
-                                color = Color.Black, 
+                                color = MaterialTheme.colorScheme.onBackground, 
                                 modifier = Modifier.padding(end = 40.dp)
                             )
                             Spacer(modifier = Modifier.weight(1f))
@@ -301,7 +326,7 @@ fun MapCalibrationDialog(
                                                     .padding(16.dp)
                                             ) {
                                                 Column {
-                                                    Text(prediction.getPrimaryText(null).toString(), fontWeight = FontWeight.Bold, color = Color.Black)
+                                                    Text(prediction.getPrimaryText(null).toString(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                                                     Text(prediction.getSecondaryText(null).toString(), fontSize = 12.sp, color = Color.Gray)
                                                 }
                                             }
@@ -337,7 +362,7 @@ fun MapCalibrationDialog(
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text(
                                     "Tap anywhere on the map to place a pin on the mountain's summit.",
-                                    color = Color.Black,
+                                    color = MaterialTheme.colorScheme.onBackground,
                                     fontSize = 14.sp,
                                     lineHeight = 20.sp,
                                     modifier = Modifier.weight(1f)

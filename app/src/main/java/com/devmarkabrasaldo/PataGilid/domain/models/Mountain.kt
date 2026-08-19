@@ -30,13 +30,7 @@ data class Mountain(
     var contributorName: String? = null,
     
     // Pending Crowdsourced GPS Calibration
-    var pendingLatitude: Double? = null,
-    var pendingLongitude: Double? = null,
-    var pendingRegion: String? = null,
-    var pendingContributorEmail: String? = null,
-    var pendingContributorName: String? = null,
-    var pendingVerifications: Int = 0,
-    var pendingVerifierEmails: List<String> = emptyList(),
+    var pendingCalibrationsCount: Int = 0,
     
     // Delta-Sync & Crowdsourced Verification Metadata
     var updatedAt: Long = System.currentTimeMillis(),
@@ -59,10 +53,5 @@ data class Mountain(
             return contributorEmail?.substringBefore("@")?.replaceFirstChar { it.uppercase() }
         }
 
-    @get:Exclude
-    val displayPendingContributorName: String?
-        get() {
-            if (!pendingContributorName.isNullOrBlank()) return pendingContributorName
-            return pendingContributorEmail?.substringBefore("@")?.replaceFirstChar { it.uppercase() }
-        }
+
 }

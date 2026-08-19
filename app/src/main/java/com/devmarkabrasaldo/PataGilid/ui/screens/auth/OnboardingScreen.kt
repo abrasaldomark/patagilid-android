@@ -98,7 +98,7 @@ fun OnboardingScreen(onNavigateToLogin: () -> Unit) {
                     TextButton(
                         onClick = onNavigateToLogin,
                         colors = ButtonDefaults.textButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.12f),
+                            containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.12f),
                             contentColor = Color.LightGray
                         ),
                         shape = RoundedCornerShape(50)

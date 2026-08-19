@@ -49,15 +49,17 @@ private val LocalGliderBlue = Color(0xFF007AFF)
 @Composable
 fun MountainMapView(
     mountain: Mountain,
+    submissionLat: Double? = null,
+    submissionLng: Double? = null,
     isAdmin: Boolean = false,
     onUpdateProposal: ((lat: Double, lng: Double) -> Unit)? = null,
     onApprove: ((lat: Double, lng: Double) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val ctx = LocalContext.current
-    val isPending = mountain.latitude == null && mountain.pendingLatitude != null
-    val displayLat = mountain.pendingLatitude ?: mountain.latitude
-    val displayLng = mountain.pendingLongitude ?: mountain.longitude
+    val isPending = mountain.latitude == null && submissionLat != null
+    val displayLat = submissionLat ?: mountain.latitude
+    val displayLng = submissionLng ?: mountain.longitude
     
     val initialLocation = if (displayLat != null && displayLng != null) LatLng(displayLat, displayLng) else LatLng(12.8797, 121.7740)
 
@@ -128,7 +130,7 @@ fun MountainMapView(
                         text = if (isPending) "${mountain.name} (Prop..." else mountain.name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = LocalTextStyle.current.copy(
@@ -192,7 +194,7 @@ fun MountainMapView(
                                 "Admin Mode: Hold & drag pin or long-press map to adjust",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color.Black
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
@@ -230,7 +232,7 @@ fun MountainMapView(
                             ) {
                                 Icon(Icons.Default.Tune, contentDescription = null, tint = LocalOrangeMap, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Admin Mode: Location Adjusted", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                Text("Admin Mode: Location Adjusted", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                                 Spacer(modifier = Modifier.weight(1f))
                                 Text(
                                     text = "Reset",
@@ -301,7 +303,7 @@ fun MountainMapView(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("${mountain.elevationMASL} MASL", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                        Text("${mountain.elevationMASL} MASL", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
                         
                         Text("  •  ", color = Color.Gray, fontSize = 14.sp)
                         

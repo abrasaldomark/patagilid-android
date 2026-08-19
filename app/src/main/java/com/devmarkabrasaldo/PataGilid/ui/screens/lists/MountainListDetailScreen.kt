@@ -167,7 +167,7 @@ fun MountainListDetailScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.background,
                         titleContentColor = Color(0xFF1C1B1F),
                         navigationIconContentColor = Color.Black
                     )
@@ -297,7 +297,7 @@ private fun ListMountainCard(
                 onLongClick = { showConfirm = true }
             ),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -370,7 +370,7 @@ private fun ListMountainCard(
     if (showConfirm) {
         AlertDialog(
             onDismissRequest = { showConfirm = false },
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.background,
             titleContentColor = Color.Black,
             textContentColor = Color(0xFF202124),
             title = { Text("Remove from list?") },

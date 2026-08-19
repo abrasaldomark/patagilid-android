@@ -72,6 +72,7 @@ private val trailClassOptions = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddCustomMountainScreen(
+    mountainId: String? = null,
     container: AppContainer,
     onNavigateBack: () -> Unit,
     onMountainAdded: (String, Boolean, Boolean) -> Unit
@@ -107,6 +108,28 @@ fun AddCustomMountainScreen(
 
     val allMountains by repository.allMountainsByName.collectAsState(initial = emptyList())
     
+    // Fetch and populate for Edit Mode
+    LaunchedEffect(mountainId, allMountains) {
+        if (mountainId != null && allMountains.isNotEmpty()) {
+            val mountain = allMountains.find { it.id == mountainId }
+            if (mountain != null) {
+                name = mountain.name
+                elevation = mountain.elevationMASL.toString()
+                description = mountain.descriptionText
+                region = mountain.region
+                difficulty = mountain.difficultyLevel
+                trailClass = mountain.trailClass
+                val islandEnum = IslandGroup.values().find { it.displayName == mountain.islandGroup || it.name == mountain.islandGroup }
+                if (islandEnum != null) {
+                    selectedIsland = islandEnum
+                }
+                if (mountain.latitude != null && mountain.longitude != null) {
+                    pinnedLocation = LatLng(mountain.latitude!!, mountain.longitude!!)
+                }
+            }
+        }
+    }
+    
     val applicableRegions = remember(selectedIsland, allMountains) {
         val defaults = defaultRegionsByIslandGroup[selectedIsland] ?: emptyList()
         val dynamic = allMountains
@@ -130,8 +153,7 @@ fun AddCustomMountainScreen(
         
         val cleanInputName = name.replace(Regex("(?i)Mt\\.?|Mount"), "").trim()
         val isDuplicate = allMountains.any { peak ->
-            val cleanDbName = peak.name.replace(Regex("(?i)Mt\\.?|Mount"), "").trim()
-            cleanDbName.equals(cleanInputName, ignoreCase = true)
+            peak.id != mountainId && peak.name.replace(Regex("(?i)Mt\\.?|Mount"), "").trim().equals(cleanInputName, ignoreCase = true)
         }
 
         if (name.isBlank() || elevInt == null) {
@@ -143,19 +165,35 @@ fun AddCustomMountainScreen(
             errorMessage = null
             coroutineScope.launch {
                 try {
-                    val mountainId = repository.submitCustomMountain(
-                        name = name.trim(),
-                        description = description.trim(),
-                        elevationMASL = elevInt,
-                        latitude = pinnedLocation?.latitude,
-                        longitude = pinnedLocation?.longitude,
-                        region = region,
-                        islandGroup = selectedIsland.displayName,
-                        difficultyLevel = difficulty,
-                        trailClass = trailClass
-                    )
+                    val finalMountainId = if (mountainId != null) {
+                        repository.updateCustomMountain(
+                            mountainId = mountainId,
+                            name = name.trim(),
+                            description = description.trim(),
+                            elevationMASL = elevInt,
+                            latitude = pinnedLocation?.latitude,
+                            longitude = pinnedLocation?.longitude,
+                            region = region,
+                            islandGroup = selectedIsland.displayName,
+                            difficultyLevel = difficulty,
+                            trailClass = trailClass
+                        )
+                        mountainId
+                    } else {
+                        repository.submitCustomMountain(
+                            name = name.trim(),
+                            description = description.trim(),
+                            elevationMASL = elevInt,
+                            latitude = pinnedLocation?.latitude,
+                            longitude = pinnedLocation?.longitude,
+                            region = region,
+                            islandGroup = selectedIsland.displayName,
+                            difficultyLevel = difficulty,
+                            trailClass = trailClass
+                        )
+                    }
                     isSubmitting = false
-                    onMountainAdded(mountainId, navigateToMountain, openLog)
+                    onMountainAdded(finalMountainId, navigateToMountain, openLog)
                 } catch (e: Exception) {
                     isSubmitting = false
                     errorMessage = "Submission failed: ${e.localizedMessage}"
@@ -165,7 +203,7 @@ fun AddCustomMountainScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF2F4F8),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(text = "Contribute Mountain", color = Color(0xFF1A1A1A), fontSize = 18.sp, fontWeight = FontWeight.Bold) },
@@ -237,7 +275,7 @@ fun AddCustomMountainScreen(
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFFF2F4F8)
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         }
@@ -257,7 +295,7 @@ fun AddCustomMountainScreen(
                         text = "Submit Mountain",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -921,7 +959,7 @@ fun AddCustomMountainScreen(
         if (showOutsidePHAlert) {
             AlertDialog(
                 onDismissRequest = { showOutsidePHAlert = false },
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.background,
                 titleContentColor = Color.Black,
                 textContentColor = Color(0xFF202124),
                 title = { Text("Invalid Location", fontWeight = FontWeight.Bold) },
@@ -939,7 +977,7 @@ fun AddCustomMountainScreen(
         val isDuplicate = errorMessage!!.contains("already on PataGilid")
         AlertDialog(
             onDismissRequest = { errorMessage = null },
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.background,
             titleContentColor = Color.Black,
             textContentColor = Color(0xFF202124),
             title = { 

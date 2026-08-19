@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.devmarkabrasaldo.PataGilid.data.repository.MountainRepository
 import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
+import com.devmarkabrasaldo.PataGilid.domain.models.CoordinateSubmission
 import com.devmarkabrasaldo.PataGilid.ui.screens.mountains.MountainMapView
 import com.devmarkabrasaldo.PataGilid.ui.theme.GlobeLocationPin
 import kotlinx.coroutines.launch
@@ -49,7 +50,10 @@ fun AdminModerationQueueScreen(
     val context = LocalContext.current
 
     val unapprovedPeaks by repository.unapprovedMountains.collectAsState(initial = emptyList())
-    val pendingGpsPeaks by repository.pendingGpsMountains.collectAsState(initial = emptyList())
+    var pendingCoordinateSubmissions by remember { mutableStateOf<List<CoordinateSubmission>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        pendingCoordinateSubmissions = repository.getPendingCoordinateSubmissions()
+    }
     val allPublicPeaks by repository.allMountainsByName.collectAsState(initial = emptyList())
 
     var isProcessing by remember { mutableStateOf(false) }
@@ -95,37 +99,41 @@ fun AdminModerationQueueScreen(
     }
     
     var mountainToViewMap by remember { mutableStateOf<Mountain?>(null) }
+    var submissionToViewMap by remember { mutableStateOf<CoordinateSubmission?>(null) }
     
     mountainToViewMap?.let { peak ->
         MountainMapView(
             mountain = peak,
             isAdmin = true,
-            onDismiss = { mountainToViewMap = null },
-            onUpdateProposal = { lat, lng ->
-                coroutineScope.launch {
-                    isProcessing = true
-                    try {
-                        repository.updateGpsProposal(peak.id, lat, lng)
-                        actionFeedback = "✏️ GPS proposal updated successfully."
-                    } catch (e: Exception) {
-                        actionFeedback = "⚠️ Failed to update GPS proposal: ${e.localizedMessage}"
-                    }
-                    isProcessing = false
-                }
-            },
-            onApprove = { lat, lng ->
-                coroutineScope.launch {
-                    isProcessing = true
-                    try {
-                        repository.applyAdjustedGpsCalibration(peak.id, lat, lng)
-                        actionFeedback = "✅ Adjusted GPS coordinates approved & broadcasted nationwide!"
-                    } catch (e: Exception) {
-                        actionFeedback = "⚠️ Failed to approve GPS: ${e.localizedMessage}"
-                    }
-                    isProcessing = false
-                }
-            }
+            onDismiss = { mountainToViewMap = null }
         )
+    }
+    
+    submissionToViewMap?.let { submission ->
+        val peak = allPublicPeaks.find { it.id == submission.mountainId }
+        if (peak != null) {
+            MountainMapView(
+                mountain = peak,
+                submissionLat = submission.latitude,
+                submissionLng = submission.longitude,
+                isAdmin = true,
+                onDismiss = { submissionToViewMap = null },
+                onApprove = { lat, lng ->
+                    coroutineScope.launch {
+                        isProcessing = true
+                        try {
+                            repository.applyAdjustedGpsCalibration(submission.id, peak.id, lat, lng, submission.region)
+                            actionFeedback = "✅ Adjusted GPS coordinates approved & broadcasted nationwide!"
+                            pendingCoordinateSubmissions = repository.getPendingCoordinateSubmissions()
+                        } catch (e: Exception) {
+                            actionFeedback = "⚠️ Failed to approve GPS: ${e.localizedMessage}"
+                        }
+                        isProcessing = false
+                        submissionToViewMap = null
+                    }
+                }
+            )
+        }
     }
 
     Scaffold(
@@ -149,7 +157,7 @@ fun AdminModerationQueueScreen(
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (unapprovedPeaks.isEmpty() && pendingGpsPeaks.isEmpty()) {
+            if (unapprovedPeaks.isEmpty() && pendingCoordinateSubmissions.isEmpty()) {
                 // Empty State
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -253,7 +261,7 @@ fun AdminModerationQueueScreen(
                             }
                         }
                     } else {
-                        if (pendingGpsPeaks.isEmpty()) {
+                        if (pendingCoordinateSubmissions.isEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text("No GPS calibrations pending review.", color = SecondaryText)
                             }
@@ -265,43 +273,49 @@ fun AdminModerationQueueScreen(
                             ) {
                                 item {
                                     SectionHeader(
-                                        title = "Pending GPS Calibrations (${pendingGpsPeaks.size})",
+                                        title = "Pending GPS Calibrations (${pendingCoordinateSubmissions.size})",
                                         footer = "Approved coordinates immediately calibrate the official mountain entry and grant a verified community badge nationwide via Delta-Sync."
                                     )
                                 }
 
-                                items(pendingGpsPeaks, key = { it.id + "gps" }) { peak ->
-                                    PendingGpsCard(
-                                        peak = peak,
-                                        onViewMap = {
-                                            mountainToViewMap = peak
-                                        },
-                                        onReject = {
-                                            coroutineScope.launch {
-                                                isProcessing = true
-                                                try {
-                                                    repository.declineGPS(peak.id)
-                                                    actionFeedback = "🗑️ GPS submission rejected."
-                                                } catch (e: Exception) {
-                                                    actionFeedback = "⚠️ Failed to reject GPS: ${e.localizedMessage}"
+                                items(pendingCoordinateSubmissions, key = { it.id }) { submission ->
+                                    val peak = allPublicPeaks.find { it.id == submission.mountainId }
+                                    if (peak != null) {
+                                        PendingGpsCard(
+                                            submission = submission,
+                                            peak = peak,
+                                            onViewMap = {
+                                                submissionToViewMap = submission
+                                            },
+                                            onReject = {
+                                                coroutineScope.launch {
+                                                    isProcessing = true
+                                                    try {
+                                                        repository.declineGPS(submission.id, peak.id)
+                                                        actionFeedback = "🗑️ GPS submission rejected."
+                                                        pendingCoordinateSubmissions = repository.getPendingCoordinateSubmissions()
+                                                    } catch (e: Exception) {
+                                                        actionFeedback = "⚠️ Failed to reject GPS: ${e.localizedMessage}"
+                                                    }
+                                                    isProcessing = false
                                                 }
-                                                isProcessing = false
-                                            }
-                                        },
-                                        onApprove = {
-                                            coroutineScope.launch {
-                                                isProcessing = true
-                                                try {
-                                                    repository.applyGpsCalibration(peak.id)
-                                                    actionFeedback = "✅ GPS coordinates for '${peak.name}' approved & broadcasted nationwide via Delta-Sync!"
-                                                } catch (e: Exception) {
-                                                    actionFeedback = "⚠️ Failed to approve GPS: ${e.localizedMessage}"
+                                            },
+                                            onApprove = {
+                                                coroutineScope.launch {
+                                                    isProcessing = true
+                                                    try {
+                                                        repository.applyGpsCalibration(submission.id, peak.id, submission.latitude, submission.longitude, submission.region)
+                                                        actionFeedback = "✅ GPS coordinates for '${peak.name}' approved & broadcasted nationwide via Delta-Sync!"
+                                                        pendingCoordinateSubmissions = repository.getPendingCoordinateSubmissions()
+                                                    } catch (e: Exception) {
+                                                        actionFeedback = "⚠️ Failed to approve GPS: ${e.localizedMessage}"
+                                                    }
+                                                    isProcessing = false
                                                 }
-                                                isProcessing = false
                                             }
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                    }
                                 }
                             }
                         }
@@ -496,6 +510,7 @@ fun PendingPeakCard(
 
 @Composable
 fun PendingGpsCard(
+    submission: CoordinateSubmission,
     peak: Mountain,
     onViewMap: () -> Unit,
     onReject: () -> Unit,
@@ -513,7 +528,7 @@ fun PendingGpsCard(
                 Column {
                     Text(peak.name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text("📍 ${peak.pendingRegion ?: peak.region}", fontSize = 12.sp, color = SecondaryText)
+                    Text("📍 ${submission.region}", fontSize = 12.sp, color = SecondaryText)
                 }
                 Text(
                     text = "GPS Proposal",
@@ -539,37 +554,23 @@ fun PendingGpsCard(
                     Icon(GlobeLocationPin, contentDescription = null, tint = Orange, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = String.format("%.6f, %.6f", peak.pendingLatitude ?: 0.0, peak.pendingLongitude ?: 0.0),
+                        text = String.format("%.6f, %.6f", submission.latitude, submission.longitude),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryText
                     )
                 }
                 
-                if (!peak.displayPendingContributorName.isNullOrBlank()) {
+                if (!submission.displayContributorName.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Person, contentDescription = null, tint = Purple, modifier = Modifier.size(12.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Submitted by: ${peak.displayPendingContributorName}",
+                            text = "Submitted by: ${submission.displayContributorName}",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
                             color = Purple
-                        )
-                    }
-                }
-                
-                if (peak.pendingVerifications > 0) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = Green, modifier = Modifier.size(12.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "⭐️ Upvoted by ${peak.pendingVerifications} community mountaineer" + if (peak.pendingVerifications > 1) "s" else "",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Green
                         )
                     }
                 }

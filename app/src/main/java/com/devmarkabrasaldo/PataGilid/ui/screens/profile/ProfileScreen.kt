@@ -55,8 +55,7 @@ fun ProfileScreen(
     var pendingCount by remember { mutableIntStateOf(0) }
     if (isAdmin) {
         val unapproved by mountainRepository.unapprovedMountains.collectAsState(initial = emptyList())
-        val pendingGps by mountainRepository.pendingGpsMountains.collectAsState(initial = emptyList())
-        pendingCount = unapproved.size + pendingGps.size
+        pendingCount = unapproved.size
     }
 
     Scaffold(

@@ -2,11 +2,13 @@ package com.devmarkabrasaldo.PataGilid.data.repository
 
 import android.util.Log
 import com.devmarkabrasaldo.PataGilid.data.local.MountainDao
+import com.devmarkabrasaldo.PataGilid.domain.models.CoordinateSubmission
 import com.devmarkabrasaldo.PataGilid.domain.models.HikeLog
 import com.devmarkabrasaldo.PataGilid.domain.models.Mountain
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
@@ -28,7 +30,6 @@ class MountainRepository(
     val allMountainsByName: Flow<List<Mountain>> = mountainDao.getAllApprovedMountainsByName()
     val allMountainsByRecent: Flow<List<Mountain>> = mountainDao.getAllApprovedMountainsByRecent()
     val unapprovedMountains: Flow<List<Mountain>> = mountainDao.getPendingApprovalMountains()
-    val pendingGpsMountains: Flow<List<Mountain>> = mountainDao.getPendingGpsMountains()
 
     suspend fun synchronize(onProgress: ((Int, Int) -> Unit)? = null) {
         syncService.synchronizeWithFirestore(onProgress)
@@ -91,42 +92,89 @@ class MountainRepository(
             "region" to region,
             "contributorEmail" to currentUser.email,
             "contributorName" to currentUser.displayName,
-            "submittedAt" to Timestamp.now()
+            "submittedAt" to Timestamp.now(),
+            "status" to "PENDING"
         )
         submissionRef.set(data).await()
         
-        // Update pending GPS on mountain document in Firestore
+        // Update pending count on mountain document in Firestore
         val mountainRef = db.collection("mountains").document(mountainId)
         val updateMap = mapOf<String, Any>(
-            "pendingLatitude" to latitude,
-            "pendingLongitude" to longitude,
-            "pendingRegion" to region,
-            "pendingContributorEmail" to (currentUser.email ?: ""),
-            "pendingContributorName" to (currentUser.displayName ?: ""),
-            "pendingVerifications" to 1,
-            "pendingVerifierEmails" to listOf(currentUser.email ?: ""),
+            "pendingCalibrationsCount" to FieldValue.increment(1),
             "updatedAt" to Timestamp.now()
         )
         mountainRef.update(updateMap).await()
         synchronize()
     }
 
-    suspend fun verifyPendingGps(mountainId: String) = withContext(Dispatchers.IO) {
-        val email = auth.currentUser?.email ?: return@withContext
-        val mountain = mountainDao.getMountainById(mountainId) ?: return@withContext
-        if (mountain.pendingVerifierEmails.contains(email)) return@withContext
+    suspend fun getPendingCoordinateSubmissions(): List<CoordinateSubmission> = withContext(Dispatchers.IO) {
+        val snapshot = db.collection("coordinate_submissions")
+            .whereEqualTo("status", "PENDING")
+            .get()
+            .await()
+        snapshot.documents.mapNotNull { it.toCoordinateSubmissionSafely() }
+    }
 
-        val updatedList = mountain.pendingVerifierEmails + email
-        val updatedCount = mountain.pendingVerifications + 1
+    suspend fun deleteCoordinateSubmission(submissionId: String) = withContext(Dispatchers.IO) {
+        db.collection("coordinate_submissions").document(submissionId).delete().await()
+    }
 
-        val mountainRef = db.collection("mountains").document(mountainId)
-        val updateMap = mapOf<String, Any>(
-            "pendingVerifications" to updatedCount,
-            "pendingVerifierEmails" to updatedList,
-            "updatedAt" to Timestamp.now()
+    suspend fun updateCoordinateSubmission(submissionId: String, lat: Double, lon: Double) = withContext(Dispatchers.IO) {
+        db.collection("coordinate_submissions").document(submissionId)
+            .update(mapOf("latitude" to lat, "longitude" to lon, "submittedAt" to System.currentTimeMillis()))
+            .await()
+    }
+
+    suspend fun updateCustomMountain(
+        mountainId: String,
+        name: String,
+        description: String,
+        elevationMASL: Int,
+        region: String,
+        islandGroup: String,
+        difficultyLevel: String,
+        trailClass: String,
+        latitude: Double? = null,
+        longitude: Double? = null
+    ) = withContext(Dispatchers.IO) {
+        val updateMap = mapOf<String, Any?>(
+            "name" to name,
+            "descriptionText" to description,
+            "elevationMASL" to elevationMASL,
+            "region" to region,
+            "islandGroup" to islandGroup,
+            "difficultyLevel" to difficultyLevel,
+            "trailClass" to trailClass,
+            "latitude" to latitude,
+            "longitude" to longitude,
+            "updatedAt" to System.currentTimeMillis()
         )
-        mountainRef.update(updateMap).await()
-        synchronize()
+        db.collection("mountains").document(mountainId).update(updateMap).await()
+        // Also update local cache so changes reflect instantly
+        val existing = mountainDao.getMountainById(mountainId)
+        if (existing != null) {
+            val updated = existing.copy(
+                name = name,
+                descriptionText = description,
+                elevationMASL = elevationMASL,
+                region = region,
+                islandGroup = islandGroup,
+                difficultyLevel = difficultyLevel,
+                trailClass = trailClass,
+                latitude = latitude,
+                longitude = longitude,
+                updatedAt = System.currentTimeMillis()
+            )
+            mountainDao.insertMountain(updated)
+        }
+    }
+
+    suspend fun getUserCoordinateSubmissions(email: String): List<CoordinateSubmission> = withContext(Dispatchers.IO) {
+        val snapshot = db.collection("coordinate_submissions")
+            .whereEqualTo("contributorEmail", email)
+            .get()
+            .await()
+        snapshot.documents.mapNotNull { it.toCoordinateSubmissionSafely() }.sortedByDescending { it.submittedAt }
     }
 
     // MARK: - Admin Operations
@@ -141,68 +189,83 @@ class MountainRepository(
         mountainDao.deleteMountainById(mountainId)
     }
 
-    suspend fun applyGpsCalibration(mountainId: String) = withContext(Dispatchers.IO) {
-        val mountain = mountainDao.getMountainById(mountainId) ?: return@withContext
-        val ref = db.collection("mountains").document(mountainId)
-        val updateMap = mapOf<String, Any?>(
-            "latitude" to mountain.pendingLatitude,
-            "longitude" to mountain.pendingLongitude,
-            "region" to (mountain.pendingRegion ?: mountain.region),
-            "isVerifiedByCommunity" to true,
-            "communityVerifications" to mountain.pendingVerifications,
-            "pendingLatitude" to null,
-            "pendingLongitude" to null,
-            "pendingRegion" to null,
-            "pendingVerifications" to 0,
-            "pendingVerifierEmails" to emptyList<String>(),
-            "updatedAt" to Timestamp.now()
-        )
-        ref.update(updateMap).await()
-        synchronize()
-    }
-
-    suspend fun declineGPS(mountainId: String) = withContext(Dispatchers.IO) {
-        val ref = db.collection("mountains").document(mountainId)
-        val updateMap = mapOf<String, Any?>(
-            "pendingLatitude" to null,
-            "pendingLongitude" to null,
-            "pendingRegion" to null,
-            "pendingContributorEmail" to null,
-            "pendingContributorName" to null,
-            "pendingVerifications" to 0,
-            "pendingVerifierEmails" to emptyList<String>(),
-            "updatedAt" to Timestamp.now()
-        )
-        ref.update(updateMap).await()
-        synchronize()
-    }
-
-    suspend fun applyAdjustedGpsCalibration(mountainId: String, lat: Double, lng: Double) = withContext(Dispatchers.IO) {
+    suspend fun applyGpsCalibration(submissionId: String, mountainId: String, lat: Double, lng: Double, region: String) = withContext(Dispatchers.IO) {
         val ref = db.collection("mountains").document(mountainId)
         val updateMap = mapOf<String, Any?>(
             "latitude" to lat,
             "longitude" to lng,
-            "pendingLatitude" to null,
-            "pendingLongitude" to null,
-            "pendingRegion" to null,
-            "pendingContributorEmail" to null,
-            "pendingContributorName" to null,
-            "pendingVerifications" to 0,
-            "pendingVerifierEmails" to emptyList<String>(),
+            "region" to region,
+            "isVerifiedByCommunity" to true,
+            "pendingCalibrationsCount" to 0,
             "updatedAt" to Timestamp.now()
         )
         ref.update(updateMap).await()
+
+        // Update the approved submission
+        db.collection("coordinate_submissions").document(submissionId)
+            .update("status", "APPROVED").await()
+
+        // Mark all other pending submissions for this mountain as DUPLICATE
+        val snapshot = db.collection("coordinate_submissions")
+            .whereEqualTo("mountainId", mountainId)
+            .whereEqualTo("status", "PENDING")
+            .get().await()
+        
+        for (doc in snapshot.documents) {
+            if (doc.id != submissionId) {
+                doc.reference.update("status", "DUPLICATE").await()
+            }
+        }
+        
         synchronize()
     }
 
-    suspend fun updateGpsProposal(mountainId: String, lat: Double, lng: Double) = withContext(Dispatchers.IO) {
+    suspend fun declineGPS(submissionId: String, mountainId: String) = withContext(Dispatchers.IO) {
+        db.collection("coordinate_submissions").document(submissionId)
+            .update("status", "REJECTED").await()
+            
+        val ref = db.collection("mountains").document(mountainId)
+        ref.update(
+            "pendingCalibrationsCount", FieldValue.increment(-1),
+            "updatedAt", Timestamp.now()
+        ).await()
+        
+        synchronize()
+    }
+
+    suspend fun applyAdjustedGpsCalibration(submissionId: String, mountainId: String, lat: Double, lng: Double, region: String) = withContext(Dispatchers.IO) {
+        // Update the submission with new coordinates and mark as approved
+        db.collection("coordinate_submissions").document(submissionId)
+            .update(mapOf(
+                "latitude" to lat,
+                "longitude" to lng,
+                "region" to region,
+                "status" to "APPROVED"
+            )).await()
+            
         val ref = db.collection("mountains").document(mountainId)
         val updateMap = mapOf<String, Any?>(
-            "pendingLatitude" to lat,
-            "pendingLongitude" to lng,
+            "latitude" to lat,
+            "longitude" to lng,
+            "region" to region,
+            "isVerifiedByCommunity" to true,
+            "pendingCalibrationsCount" to 0,
             "updatedAt" to Timestamp.now()
         )
         ref.update(updateMap).await()
+        
+        // Mark all other pending submissions for this mountain as DUPLICATE
+        val snapshot = db.collection("coordinate_submissions")
+            .whereEqualTo("mountainId", mountainId)
+            .whereEqualTo("status", "PENDING")
+            .get().await()
+        
+        for (doc in snapshot.documents) {
+            if (doc.id != submissionId) {
+                doc.reference.update("status", "DUPLICATE").await()
+            }
+        }
+        
         synchronize()
     }
 
