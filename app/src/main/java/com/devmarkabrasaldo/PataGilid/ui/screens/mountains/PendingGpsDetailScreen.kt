@@ -34,6 +34,7 @@ fun PendingGpsDetailScreen(
     var submission by remember { mutableStateOf<CoordinateSubmission?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var showMapCalibration by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val loadSubmission = {
         coroutineScope.launch {
@@ -53,12 +54,33 @@ fun PendingGpsDetailScreen(
             initialLocation = LatLng(submission!!.latitude, submission!!.longitude),
             onLocationPinned = { latLng, _ ->
                 coroutineScope.launch {
+                    showMapCalibration = false
+                    isLoading = true
+                    
+                    var regionStr = submission!!.region
+                    try {
+                        val geocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
+                        val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+                        if (!addresses.isNullOrEmpty()) {
+                            val address = addresses[0]
+                            val adminArea = address.adminArea ?: ""
+                            val subAdminArea = address.subAdminArea ?: ""
+                            val locality = address.locality ?: ""
+                            val regionResult = com.devmarkabrasaldo.PataGilid.domain.models.RegionHelper.mapToInternalRegion(adminArea, subAdminArea, locality)
+                            if (regionResult.first != null) {
+                                regionStr = regionResult.first!!
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Fallback to previous region if geocoder fails
+                    }
+                    
                     container.mountainRepository.updateCoordinateSubmission(
                         submissionId = submission!!.id,
                         lat = latLng.latitude,
-                        lon = latLng.longitude
+                        lon = latLng.longitude,
+                        region = regionStr
                     )
-                    showMapCalibration = false
                     loadSubmission()
                 }
             }
@@ -136,6 +158,7 @@ fun PendingGpsDetailScreen(
                     GoogleMap(
                         modifier = Modifier.fillMaxSize(),
                         cameraPositionState = cameraPositionState,
+                        properties = MapProperties(mapType = MapType.TERRAIN),
                         uiSettings = MapUiSettings(zoomControlsEnabled = false)
                     ) {
                         Marker(

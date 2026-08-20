@@ -158,11 +158,7 @@ fun MapCalibrationDialog(
                 .background(Color.Transparent)
         ) {
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.95f)
-                    .align(Alignment.BottomCenter),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                modifier = Modifier.fillMaxSize(),
                 color = Color(0xFFF3F4F6)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -212,34 +208,34 @@ fun MapCalibrationDialog(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp)
+                            .padding(top = 50.dp, start = 20.dp, end = 20.dp, bottom = 20.dp) // extra top padding for status bar
                     ) {
-                        Row(
+                        Box(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                            contentAlignment = Alignment.Center
                         ) {
+                            Text(
+                                "Edit GPS Calibration", 
+                                fontWeight = FontWeight.Bold, 
+                                fontSize = 18.sp, 
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
-                                color = Color(0xFFE0E7FF),
-                                modifier = Modifier.clickable { onDismiss() }
+                                color = Color.White,
+                                shadowElevation = 2.dp,
+                                modifier = Modifier
+                                    .align(Alignment.CenterStart)
+                                    .clickable { onDismiss() }
                             ) {
                                 Text(
                                     "Cancel", 
-                                    color = Color(0xFF3B82F6), 
+                                    color = Color(0xFF007AFF), 
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), 
                                     fontSize = 15.sp
                                 )
                             }
-                            
-                            Spacer(modifier = Modifier.weight(1f))
-                            Text(
-                                "Pin Summit Location", 
-                                fontWeight = FontWeight.Bold, 
-                                fontSize = 18.sp, 
-                                color = MaterialTheme.colorScheme.onBackground, 
-                                modifier = Modifier.padding(end = 40.dp)
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
@@ -349,7 +345,7 @@ fun MapCalibrationDialog(
                             color = Color.White,
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
-                                .padding(horizontal = 24.dp, vertical = 40.dp)
+                                .padding(horizontal = 24.dp, vertical = if (pinnedLocation != null) 170.dp else 40.dp)
                                 .shadow(12.dp, RoundedCornerShape(16.dp))
                         ) {
                             Row(
@@ -382,21 +378,38 @@ fun MapCalibrationDialog(
                     }
                     
                     if (pinnedLocation != null) {
-                        Button(
-                            onClick = { 
-                                pinnedLocation?.let { onLocationPinned(it, selectedPlaceName) }
-                                onDismiss()
-                            },
+                        Surface(
                             shape = RoundedCornerShape(24.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6)),
+                            color = Color.White,
+                            shadowElevation = 8.dp,
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
-                                .padding(horizontal = 24.dp, vertical = if (showInstruction) 120.dp else 40.dp)
+                                .padding(horizontal = 24.dp, vertical = 40.dp)
                                 .fillMaxWidth()
-                                .height(56.dp)
-                                .shadow(8.dp, RoundedCornerShape(24.dp))
                         ) {
-                            Text("Confirm Pin Location", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text = String.format("Selected: %.5f, %.5f", pinnedLocation!!.latitude, pinnedLocation!!.longitude),
+                                    color = Color.Gray,
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                                Button(
+                                    onClick = { 
+                                        pinnedLocation?.let { onLocationPinned(it, selectedPlaceName) }
+                                        onDismiss()
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp)
+                                ) {
+                                    Text("Confirm Location", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                                }
+                            }
                         }
                     }
                 }

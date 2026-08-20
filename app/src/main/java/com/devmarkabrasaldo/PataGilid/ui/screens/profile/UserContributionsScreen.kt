@@ -57,7 +57,7 @@ fun UserContributionsScreen(
     var selectedPendingMountain by remember { mutableStateOf<Mountain?>(null) }
     var selectedPendingGps by remember { mutableStateOf<CoordinateSubmission?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showMapCalibration by remember { mutableStateOf(false) }
+
 
     val refreshGps = {
         coroutineScope.launch {
@@ -105,25 +105,7 @@ fun UserContributionsScreen(
         )
     }
 
-    if (showMapCalibration && selectedPendingGps != null) {
-        com.devmarkabrasaldo.PataGilid.ui.screens.mountains.MapCalibrationDialog(
-            onDismiss = { showMapCalibration = false },
-            initialLocation = com.google.android.gms.maps.model.LatLng(selectedPendingGps!!.latitude, selectedPendingGps!!.longitude),
-            onLocationPinned = { latLng, _ ->
-                viewModel.updateCoordinateSubmission(
-                    submissionId = selectedPendingGps!!.id,
-                    lat = latLng.latitude,
-                    lon = latLng.longitude,
-                    onSuccess = { 
-                        showMapCalibration = false
-                        selectedPendingGps = null
-                        refreshGps()
-                    },
-                    onError = {}
-                )
-            }
-        )
-    }
+
 
     Scaffold(
         topBar = {

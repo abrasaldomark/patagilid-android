@@ -151,32 +151,33 @@ fun MountainDetailScreen(
                         }
                     }
 
-                    // Bookmark removed as requested
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = Color.White,
-                        shadowElevation = 6.dp,
-                        modifier = Modifier.padding(end = 12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    if (mountain?.isApproved == true) {
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.White,
+                            shadowElevation = 6.dp,
+                            modifier = Modifier.padding(end = 12.dp)
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = GliderBlue,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .clickable { onNavigateToLogClimb(mountainId) }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Add Climb",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                Surface(
+                                    shape = CircleShape,
+                                    color = GliderBlue,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .clickable { onNavigateToLogClimb(mountainId) }
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = "Add Climb",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -459,49 +460,51 @@ fun MountainDetailScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            if (peak.isPubliclyApproved) {
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Mountain Photography
-            Text("Mountain Photography", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, LightCard),
-                color = Color.White,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.Top) {
-                        Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = GliderBlue, modifier = Modifier.size(24.dp).padding(top = 2.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(if (personalPhotoUrl == null) "Add Personal Cover Photo" else "Personal Cover Photo Set", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp)
-                            Text("Set a private cover photo for this mountain. This image is visible only on your account.", color = SummitSteel, fontSize = 12.sp, lineHeight = 16.sp)
+                // Mountain Photography
+                Text("Mountain Photography", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onBackground)
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, LightCard),
+                    color = Color.White,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = GliderBlue, modifier = Modifier.size(24.dp).padding(top = 2.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(if (personalPhotoUrl == null) "Add Personal Cover Photo" else "Personal Cover Photo Set", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp)
+                                Text("Set a private cover photo for this mountain. This image is visible only on your account.", color = SummitSteel, fontSize = 12.sp, lineHeight = 16.sp)
+                            }
                         }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { photoPickerLauncher.launch("image/*") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = GliderBlue),
-                        shape = RoundedCornerShape(12.dp),
-                        enabled = !isUploadingPhoto
-                    ) {
-                        if (isUploadingPhoto) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Saving photo...", fontWeight = FontWeight.Bold)
-                        } else {
-                            Icon(if (personalPhotoUrl == null) Icons.Default.PhotoCamera else Icons.Default.Edit, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (personalPhotoUrl == null) "Upload Photo" else "Update Photo", fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { photoPickerLauncher.launch("image/*") },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = GliderBlue),
+                            shape = RoundedCornerShape(12.dp),
+                            enabled = !isUploadingPhoto
+                        ) {
+                            if (isUploadingPhoto) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Saving photo...", fontWeight = FontWeight.Bold)
+                            } else {
+                                Icon(if (personalPhotoUrl == null) Icons.Default.PhotoCamera else Icons.Default.Edit, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(if (personalPhotoUrl == null) "Upload Photo" else "Update Photo", fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(40.dp))
+            }
         }
 
         if (showCalibrateDialog) {

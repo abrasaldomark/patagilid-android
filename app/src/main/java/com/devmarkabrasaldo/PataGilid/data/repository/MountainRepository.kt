@@ -132,11 +132,12 @@ class MountainRepository(
         db.collection("coordinate_submissions").document(submissionId).delete().await()
     }
 
-    suspend fun updateCoordinateSubmission(submissionId: String, lat: Double, lon: Double) = withContext(Dispatchers.IO) {
+    suspend fun updateCoordinateSubmission(submissionId: String, lat: Double, lon: Double, region: String) = withContext(Dispatchers.IO) {
         db.collection("coordinate_submissions").document(submissionId)
             .update(
                 "latitude", lat,
                 "longitude", lon,
+                "region", region,
                 "submittedAt", System.currentTimeMillis()
             ).await()
     }

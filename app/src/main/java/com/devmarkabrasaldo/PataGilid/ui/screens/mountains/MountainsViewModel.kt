@@ -53,16 +53,7 @@ class MountainsViewModel(private val repository: MountainRepository) : ViewModel
         }
     }
 
-    fun updateCoordinateSubmission(submissionId: String, lat: Double, lon: Double, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
-        viewModelScope.launch {
-            try {
-                repository.updateCoordinateSubmission(submissionId, lat, lon)
-                onSuccess()
-            } catch (e: Exception) {
-                onError(e)
-            }
-        }
-    }
+
 
     fun deletePendingMountain(mountainId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
         viewModelScope.launch {
