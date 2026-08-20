@@ -18,6 +18,7 @@ import com.devmarkabrasaldo.PataGilid.ui.screens.climbs.SummitLogDetailScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.mountains.AddCustomMountainScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.mountains.MainScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.mountains.MountainDetailScreen
+import com.devmarkabrasaldo.PataGilid.ui.screens.mountains.PendingGpsDetailScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.profile.AdminModerationQueueScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.profile.DonationQRScreen
 import com.devmarkabrasaldo.PataGilid.ui.screens.lists.MountainListDetailScreen
@@ -40,8 +41,10 @@ object Screen {
     const val SPONSORS = "sponsors"
 
     const val MOUNTAIN_LIST_DETAIL = "mountain_list_detail/{listId}"
+    const val PENDING_GPS_DETAIL = "pending_gps_detail/{submissionId}"
 
     fun mountainDetail(mountainId: String) = "mountain_detail/$mountainId"
+    fun pendingGpsDetail(submissionId: String) = "pending_gps_detail/$submissionId"
     fun hikeLogCreation(mountainId: String) = "hike_log_creation/$mountainId"
     fun summitLogDetail(logId: String) = "summit_log_detail/$logId"
     fun mountainListDetail(listId: String) = "mountain_list_detail/$listId"
@@ -132,7 +135,8 @@ fun PataGilidNavigation(container: AppContainer) {
                 authRepository = container.authRepository,
                 onNavigateBack = { navController.navigateUp() },
                 onEditMountain = { mountainId -> navController.navigate(Screen.addCustomMountain(mountainId)) },
-                onViewMountain = { mountainId -> navController.navigate(Screen.mountainDetail(mountainId)) }
+                onViewMountain = { mountainId -> navController.navigate(Screen.mountainDetail(mountainId)) },
+                onViewGpsSubmission = { submissionId -> navController.navigate(Screen.pendingGpsDetail(submissionId)) }
             )
         }
 
@@ -151,7 +155,8 @@ fun PataGilidNavigation(container: AppContainer) {
                 mountainId = mountainId,
                 container = container,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToLogClimb = { id -> navController.navigate(Screen.hikeLogCreation(id)) }
+                onNavigateToLogClimb = { id -> navController.navigate(Screen.hikeLogCreation(id)) },
+                onEditMountain = { id -> navController.navigate(Screen.addCustomMountain(id)) }
             )
         }
 
@@ -252,6 +257,18 @@ fun PataGilidNavigation(container: AppContainer) {
                     }
                 )
             }
+        }
+
+        composable(
+            route = Screen.PENDING_GPS_DETAIL,
+            arguments = listOf(navArgument("submissionId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val submissionId = backStackEntry.arguments?.getString("submissionId") ?: ""
+            PendingGpsDetailScreen(
+                submissionId = submissionId,
+                container = container,
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

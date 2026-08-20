@@ -36,7 +36,8 @@ fun UserContributionsScreen(
     authRepository: AuthRepository,
     onNavigateBack: () -> Unit,
     onEditMountain: (String) -> Unit,
-    onViewMountain: (String) -> Unit
+    onViewMountain: (String) -> Unit,
+    onViewGpsSubmission: (String) -> Unit
 ) {
     val factory = remember { MountainsViewModel.Factory(mountainRepository) }
     val viewModel: MountainsViewModel = viewModel(factory = factory)
@@ -189,16 +190,18 @@ fun UserContributionsScreen(
                         SwipeToReveal(
                             modifier = Modifier.padding(vertical = 4.dp),
                             shape = RoundedCornerShape(8.dp),
-                            onEdit = {
-                                onEditMountain(peak.id)
-                            },
                             onDelete = {
                                 selectedPendingMountain = peak
                                 selectedPendingGps = null
                                 showDeleteConfirm = true
                             }
                         ) {
-                            ContributionCard(peak = peak, status = "Pending", statusColor = Color(0xFFFFA500))
+                            ContributionCard(
+                                peak = peak, 
+                                status = "Pending", 
+                                statusColor = Color(0xFFFFA500),
+                                modifier = Modifier.clickable { onViewMountain(peak.id) }
+                            )
                         }
                     }
                     item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -218,18 +221,18 @@ fun UserContributionsScreen(
                             SwipeToReveal(
                                 modifier = Modifier.padding(vertical = 4.dp),
                                 shape = RoundedCornerShape(8.dp),
-                                onEdit = {
-                                    selectedPendingGps = submission
-                                    selectedPendingMountain = null
-                                    showMapCalibration = true
-                                },
                                 onDelete = {
                                     selectedPendingGps = submission
                                     selectedPendingMountain = null
                                     showDeleteConfirm = true
                                 }
                             ) {
-                                GpsContributionCard(submission = submission, status = submission.status, statusColor = Color(0xFFFFA500))
+                                GpsContributionCard(
+                                    submission = submission, 
+                                    status = submission.status, 
+                                    statusColor = Color(0xFFFFA500),
+                                    modifier = Modifier.clickable { onViewGpsSubmission(submission.id) }
+                                )
                             }
                         } else {
                             Box(modifier = Modifier.padding(vertical = 4.dp)) {
@@ -240,7 +243,8 @@ fun UserContributionsScreen(
                                         "APPROVED" -> Color(0xFF4CAF50)
                                         "REJECTED", "DUPLICATE" -> Color(0xFFF44336)
                                         else -> Color.Gray
-                                    }
+                                    },
+                                    modifier = Modifier.clickable { onViewGpsSubmission(submission.id) }
                                 )
                             }
                         }
@@ -259,7 +263,12 @@ fun UserContributionsScreen(
                     }
                     items(approvedMountains) { peak ->
                         Box(modifier = Modifier.padding(vertical = 4.dp)) {
-                            ContributionCard(peak = peak, status = "Approved", statusColor = Color(0xFF4CAF50))
+                            ContributionCard(
+                                peak = peak, 
+                                status = "Approved", 
+                                statusColor = Color(0xFF4CAF50),
+                                modifier = Modifier.clickable { onViewMountain(peak.id) }
+                            )
                         }
                     }
                 }
@@ -269,9 +278,9 @@ fun UserContributionsScreen(
 }
 
 @Composable
-fun ContributionCard(peak: Mountain, status: String, statusColor: Color) {
+fun ContributionCard(peak: Mountain, status: String, statusColor: Color, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -319,9 +328,9 @@ fun ContributionCard(peak: Mountain, status: String, statusColor: Color) {
 }
 
 @Composable
-fun GpsContributionCard(submission: CoordinateSubmission, status: String, statusColor: Color) {
+fun GpsContributionCard(submission: CoordinateSubmission, status: String, statusColor: Color, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

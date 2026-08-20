@@ -57,7 +57,8 @@ fun MountainDetailScreen(
     mountainId: String,
     container: AppContainer,
     onNavigateBack: () -> Unit,
-    onNavigateToLogClimb: (String) -> Unit
+    onNavigateToLogClimb: (String) -> Unit,
+    onEditMountain: ((String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -130,6 +131,26 @@ fun MountainDetailScreen(
                     }
                 },
                 actions = {
+                    // Edit Button for pending mountains
+                    val currentUserEmail = container.authRepository.currentUser.value?.email
+                    if (mountain?.isApproved == false && mountain?.contributorEmail == currentUserEmail && currentUserEmail != null) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .clickable { onEditMountain?.invoke(mountainId) },
+                            shadowElevation = 2.dp
+                        ) {
+                            Text(
+                                text = "Edit",
+                                color = Color(0xFF007AFF),
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
+
                     // Bookmark removed as requested
                     Surface(
                         shape = RoundedCornerShape(24.dp),

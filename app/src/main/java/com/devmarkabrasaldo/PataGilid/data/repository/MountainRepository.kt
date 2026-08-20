@@ -134,8 +134,20 @@ class MountainRepository(
 
     suspend fun updateCoordinateSubmission(submissionId: String, lat: Double, lon: Double) = withContext(Dispatchers.IO) {
         db.collection("coordinate_submissions").document(submissionId)
-            .update(mapOf("latitude" to lat, "longitude" to lon, "submittedAt" to System.currentTimeMillis()))
-            .await()
+            .update(
+                "latitude", lat,
+                "longitude", lon,
+                "submittedAt", System.currentTimeMillis()
+            ).await()
+    }
+
+    suspend fun getCoordinateSubmission(submissionId: String): CoordinateSubmission? = withContext(Dispatchers.IO) {
+        try {
+            val snapshot = db.collection("coordinate_submissions").document(submissionId).get().await()
+            snapshot.toCoordinateSubmissionSafely()
+        } catch (e: Exception) {
+            null
+        }
     }
 
     suspend fun updateCustomMountain(

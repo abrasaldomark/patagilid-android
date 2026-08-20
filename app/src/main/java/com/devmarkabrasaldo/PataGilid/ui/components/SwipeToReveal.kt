@@ -32,7 +32,7 @@ import kotlin.math.roundToInt
 fun SwipeToReveal(
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
-    onEdit: () -> Unit,
+    onEdit: (() -> Unit)? = null,
     onDelete: () -> Unit,
     content: @Composable () -> Unit
 ) {
@@ -40,52 +40,77 @@ fun SwipeToReveal(
     val offsetX = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val decay = rememberSplineBasedDecay<Float>()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val paddingPx = with(density) { 16.dp.toPx() }
 
     Box(modifier = modifier) {
         // Background Actions Layer
         Row(
             modifier = Modifier
                 .matchParentSize()
-                .clip(shape)
-                .background(Color.Transparent),
+                .padding(end = 16.dp), // Padding from the right edge
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                modifier = Modifier.onSizeChanged { actionsWidth = it.width.toFloat() }
+                modifier = Modifier.onSizeChanged { actionsWidth = it.width.toFloat() + paddingPx },
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Edit Button
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(80.dp)
-                        .background(Color(0xFF007AFF)) // iOS Blue
-                        .clickable {
+                // Edit Button (Optional)
+                if (onEdit != null) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable {
                             scope.launch {
                                 offsetX.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
                             }
                             onEdit()
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", tint = Color.White)
+                        }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(Color(0xFF007AFF)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", tint = Color.White)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        androidx.compose.material3.Text(
+                            text = "Edit",
+                            color = Color.Gray,
+                            fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp)
+                        )
+                    }
                 }
-                
+
                 // Delete Button
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(80.dp)
-                        .background(Color(0xFFFF3B30)) // iOS Red
-                        .clickable {
-                            scope.launch {
-                                offsetX.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
-                            }
-                            onDelete()
-                        },
-                    contentAlignment = Alignment.Center
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable {
+                        scope.launch {
+                            offsetX.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
+                        }
+                        onDelete()
+                    }
                 ) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
+                    Box(
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(Color(0xFF007AFF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    androidx.compose.material3.Text(
+                        text = "Delete",
+                        color = Color.Gray,
+                        fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp)
+                    )
                 }
             }
         }
