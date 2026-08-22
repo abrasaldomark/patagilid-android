@@ -100,7 +100,7 @@ fun SwipeToReveal(
                         modifier = Modifier
                             .size(50.dp)
                             .clip(androidx.compose.foundation.shape.CircleShape)
-                            .background(Color(0xFF007AFF)),
+                            .background(Color(0xFFFF3B30)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)

@@ -112,7 +112,7 @@ fun HikeLogCreationScreen(
                 navigationIcon = {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color.Transparent,
+                        color = Color.White,
                         modifier = Modifier
                             .padding(start = 12.dp)
                             .height(48.dp)
@@ -135,12 +135,12 @@ fun HikeLogCreationScreen(
                 actions = {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color.Transparent,
+                        color = Color.White,
                         modifier = Modifier
                             .padding(end = 12.dp)
                             .height(48.dp)
                             .clip(RoundedCornerShape(24.dp))
-                            .clickable(enabled = !isSubmitting) { vm.submitHikeLog(onSuccess = onLogSuccess) }
+                            .clickable(enabled = trailName.isNotBlank() && !isSubmitting) { vm.submitHikeLog(onSuccess = onLogSuccess) }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -167,7 +167,7 @@ fun HikeLogCreationScreen(
                                 } else {
                                     Text(
                                         text = "Save",
-                                        color = Color(0xFF1A73E8),
+                                        color = if (trailName.isNotBlank()) Color(0xFF1A73E8) else Color.LightGray,
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )

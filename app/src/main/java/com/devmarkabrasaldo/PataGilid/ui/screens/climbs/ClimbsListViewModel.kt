@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class ClimbsListViewModel(private val repository: MountainRepository) : ViewModel() {
 
@@ -27,6 +28,18 @@ class ClimbsListViewModel(private val repository: MountainRepository) : ViewMode
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyMap()
         )
+
+    fun deleteLog(log: HikeLog) {
+        log.id?.let { logId ->
+            viewModelScope.launch {
+                try {
+                    repository.deleteHikeLog(logId)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
 
     class Factory(private val repository: MountainRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")

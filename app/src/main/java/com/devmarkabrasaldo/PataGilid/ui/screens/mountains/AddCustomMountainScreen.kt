@@ -86,14 +86,13 @@ fun AddCustomMountainScreen(
     var name by remember { mutableStateOf("") }
     var elevation by remember { mutableStateOf("") }
     var selectedIsland by remember { mutableStateOf(IslandGroup.LUZON) }
-    var region by remember { mutableStateOf("CAR (Cordillera Administrative Region)") }
+    var region by remember { mutableStateOf("") }
     var difficulty by remember { mutableStateOf("3/9 (Minor)") }
     var trailClass by remember { mutableStateOf("Class 1-2") }
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
-    var showRegionDialog by remember { mutableStateOf(false) }
     var showDifficultyDialog by remember { mutableStateOf(false) }
     var showTrailClassDialog by remember { mutableStateOf(false) }
     
@@ -130,21 +129,7 @@ fun AddCustomMountainScreen(
         }
     }
     
-    val applicableRegions = remember(selectedIsland, allMountains) {
-        val defaults = defaultRegionsByIslandGroup[selectedIsland] ?: emptyList()
-        val dynamic = allMountains
-            .filter { it.islandGroup.equals(selectedIsland.displayName, ignoreCase = true) || it.islandGroup.equals(selectedIsland.name, ignoreCase = true) }
-            .map { it.region }
-            .filter { it.isNotBlank() }
-        RegionHelper.sortRegions(defaults + dynamic)
-    }
-
-    // Update region defaults when switching island groups if not in new group
-    LaunchedEffect(applicableRegions) {
-        if (region !in applicableRegions && applicableRegions.isNotEmpty()) {
-            region = applicableRegions.first()
-        }
-    }
+    // No need to update region defaults manually since it's populated from map pin.
 
     val isFormValid = name.isNotBlank() && elevation.toIntOrNull() != null && !isSubmitting
 
@@ -210,70 +195,67 @@ fun AddCustomMountainScreen(
                 navigationIcon = {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color.Transparent,
+                        color = Color.White,
                         modifier = Modifier
                             .padding(start = 12.dp)
                             .height(48.dp)
                             .clip(RoundedCornerShape(24.dp))
                             .clickable(enabled = !isSubmitting) { onNavigateBack() }
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(horizontal = 18.dp)
-                        ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 16.dp)) {
                             Text(
                                 text = "Cancel",
                                 color = Color(0xFF1A73E8),
-                                fontSize = 15.sp,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
                 },
-                actions = {
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = Color.Transparent,
-                        modifier = Modifier
-                            .padding(end = 12.dp)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .clickable(enabled = isFormValid && !isSubmitting) { showSubmitBottomSheet = true }
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.padding(horizontal = 18.dp)
+                    actions = {
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.White,
+                            modifier = Modifier
+                                .padding(end = 12.dp)
+                                .height(48.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .clickable(enabled = isFormValid && !isSubmitting) { showSubmitBottomSheet = true }
                         ) {
-                            // Invisible text ensures the Box maintains the exact width of the "Done" text
-                            Text(
-                                text = "Done",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.alpha(0f)
-                            )
-                            
-                            androidx.compose.animation.Crossfade(
-                                targetState = isSubmitting, 
-                                label = "SubmitAnimation"
-                            ) { submitting ->
-                                if (submitting) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp,
-                                        color = Color(0xFF1A73E8)
-                                    )
-                                } else {
-                                    Text(
-                                        text = "Done",
-                                        color = if (isFormValid) Color(0xFF1A73E8) else Color(0xFFB0C4DE),
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(horizontal = 18.dp)
+                            ) {
+                                // Invisible text ensures the Box maintains the exact width of the "Save" text
+                                Text(
+                                    text = "Save",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.alpha(0f)
+                                )
+                                
+                                androidx.compose.animation.Crossfade(
+                                    targetState = isSubmitting, 
+                                    label = "SubmitAnimation"
+                                ) { submitting ->
+                                    if (submitting) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            strokeWidth = 2.dp,
+                                            color = Color(0xFF1A73E8)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "Save",
+                                            color = if (isFormValid) Color(0xFF1A73E8) else Color.LightGray,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
-                },
+                    },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -468,46 +450,38 @@ fun AddCustomMountainScreen(
                         
                         HorizontalDivider(color = Color(0xFFEAEDF1), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
 
-                        // Segmented Control (Sliding Island Group Switcher)
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFECEFF4),
+                        // Island Group Row - Read Only
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
-                                .height(44.dp)
+                                .padding(horizontal = 16.dp, vertical = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                                IslandGroup.entries.forEach { island ->
-                                    val isSelected = selectedIsland == island
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .fillMaxHeight()
-                                            .padding(3.dp)
-                                            .clip(RoundedCornerShape(11.dp))
-                                            .background(if (isSelected) Color.White else Color.Transparent)
-                                            .clickable { selectedIsland = island },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = island.displayName,
-                                            color = if (isSelected) Color(0xFF1A1A1A) else Color(0xFF5F6368),
-                                            fontSize = 14.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                        )
-                                    }
-                                }
-                            }
+                            Text(
+                                text = "Island Group",
+                                color = Color(0xFF1A1A1A),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = if (region.isNotBlank()) selectedIsland.displayName else "Please pin location first",
+                                color = if (region.isNotBlank()) Color(0xFF1A73E8) else Color(0xFF9AA0A6),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
                         }
 
                         HorizontalDivider(color = Color(0xFFEAEDF1), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
 
-                        // Region Row
+                        // Region Row - Read Only
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { showRegionDialog = true }
                                 .padding(horizontal = 16.dp, vertical = 16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -519,24 +493,15 @@ fun AddCustomMountainScreen(
                                 fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.width(16.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = region,
-                                    color = Color(0xFF1A73E8),
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f, fill = false)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Select Region",
-                                    tint = Color(0xFF1A73E8),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                            Text(
+                                text = if (region.isNotBlank()) region else "Please pin location first",
+                                color = if (region.isNotBlank()) Color(0xFF1A73E8) else Color(0xFF9AA0A6),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
                         }
                     }
                 }
@@ -664,71 +629,6 @@ fun AddCustomMountainScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Region Selection Dialog
-        if (showRegionDialog) {
-            Dialog(onDismissRequest = { showRegionDialog = false }) {
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            text = "Select Region (${selectedIsland.displayName})",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1A1A1A)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 380.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            applicableRegions.forEach { reg ->
-                                val isSelected = (reg == region)
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = if (isSelected) Color(0xFFE8F0FE) else Color.Transparent,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable {
-                                            region = reg
-                                            showRegionDialog = false
-                                        }
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = reg,
-                                            color = if (isSelected) Color(0xFF1A73E8) else Color(0xFF1A1A1A),
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            fontSize = 15.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        TextButton(
-                            onClick = { showRegionDialog = false },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text("Close", color = Color(0xFF5F6368), fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
 
         // Difficulty Selection Dialog
         if (showDifficultyDialog) {

@@ -358,9 +358,13 @@ fun ClimbsListScreen(
                 ) {
                     items(filteredLogs, key = { it.id ?: UUID.randomUUID().toString() }) { log ->
                         val mountain = mountainMap[log.mountainId]
-                        HikeLogRow(log = log, mountain = mountain, onClick = {
-                            log.id?.let { onNavigateToDetail(it) }
-                        })
+                        SwipeToReveal(
+                            onDelete = { vm.deleteLog(log) }
+                        ) {
+                            HikeLogRow(log = log, mountain = mountain, onClick = {
+                                log.id?.let { onNavigateToDetail(it) }
+                            })
+                        }
                     }
                 }
             }

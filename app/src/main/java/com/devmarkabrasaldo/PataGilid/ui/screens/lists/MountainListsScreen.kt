@@ -339,7 +339,7 @@ private fun MountainListCard(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(GliderBlue),
+                        .background(Color(0xFFFF3B30)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
